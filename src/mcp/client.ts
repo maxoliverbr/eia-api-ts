@@ -41,26 +41,24 @@ export class McpClient {
     }
   }
 
-  async get<T>(path: string): Promise<T> {
-    this.assertSafePath(path)
-    const res = await this.fetchImpl(`${this.baseUrl}${path}`)
-    if (!res.ok) {
-      const body = await res.text().catch(() => '')
-      throw new Error(`GET ${path} → ${res.status} ${body.slice(0, 200)}`)
-    }
-    return (await res.json()) as T
+  get<T>(path: string): Promise<T> {
+    return this.call<T>(path)
   }
 
-  async post<T>(path: string, body: unknown): Promise<T> {
-    this.assertSafePath(path)
-    const res = await this.fetchImpl(`${this.baseUrl}${path}`, {
+  post<T>(path: string, body: unknown): Promise<T> {
+    return this.call<T>(path, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     })
+  }
+
+  private async call<T>(path: string, init?: RequestInit): Promise<T> {
+    this.assertSafePath(path)
+    const res = await this.fetchImpl(`${this.baseUrl}${path}`, init)
     if (!res.ok) {
       const text = await res.text().catch(() => '')
-      throw new Error(`POST ${path} → ${res.status} ${text.slice(0, 200)}`)
+      throw new Error(`${init?.method ?? 'GET'} ${path} → ${res.status} ${text.slice(0, 200)}`)
     }
     return (await res.json()) as T
   }

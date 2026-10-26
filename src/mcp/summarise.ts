@@ -51,14 +51,10 @@ export const summarizeRows = (route: string, rows: RawEiaRow[]): SummaryResult =
     const min = Math.min(...values)
     const max = Math.max(...values)
     const avg = values.reduce((a, b) => a + b, 0) / values.length
-    const last = sorted[sorted.length - 1]
-    const prev = sorted[sorted.length - 2]
-    const yoy =
-      last && prev
-        ? (((toNum(last['value']) as number) - (toNum(prev['value']) as number)) /
-            Math.abs(toNum(prev['value']) as number)) *
-          100
-        : null
+    const last = sorted.at(-1)
+    const latest = values.at(-1)!
+    const prev = values.at(-2)
+    const yoy = prev !== undefined ? ((latest - prev) / Math.abs(prev)) * 100 : null
     return {
       series,
       description: last?.['series-description'] as string | undefined,
@@ -68,7 +64,7 @@ export const summarizeRows = (route: string, rows: RawEiaRow[]): SummaryResult =
       min,
       max,
       avg,
-      latest: { period: String(last?.['period'] ?? ''), value: toNum(last?.['value']) as number },
+      latest: { period: String(last?.['period'] ?? ''), value: latest },
       yoyChangePct: yoy,
     }
   })

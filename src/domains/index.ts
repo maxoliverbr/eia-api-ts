@@ -38,13 +38,7 @@ export const DOMAINS: readonly DomainMeta[] = [
   totalEnergyMeta,
 ] as const
 
-export const DOMAINS_BY_ID: Readonly<Record<string, DomainMeta>> = DOMAINS.reduce(
-  (acc, d) => {
-    acc[d.id] = d
-    return acc
-  },
-  {} as Record<string, DomainMeta>
-)
+export const DOMAINS_BY_ID: Readonly<Record<string, DomainMeta>> = Object.fromEntries(DOMAINS.map((d) => [d.id, d]))
 
 export const getDomain = (id: string): DomainMeta | undefined => DOMAINS_BY_ID[id]
 
@@ -53,42 +47,10 @@ export const getDomain = (id: string): DomainMeta | undefined => DOMAINS_BY_ID[i
  *
  * Most domains store their sub-routes at `/v2/{domain}/{id}/...`, but a few
  * (rto, state-electricity-profiles, aeo, ieo, co2-emissions) use a different
- * upstream namespace declared in each sub-route's `path` field. Looking up
- * the metadata `path` keeps `/query` and the discovery proxy in sync with
- * the actual upstream layout.
+ * upstream namespace declared in each sub-route's `path` field. Unknown
+ * domains or sub-routes fall back to `{domain}/{subRouteId}` so power-users
+ * can still hit ad-hoc upstream paths. Returns the path without `/data`.
  */
-export const getUpstreamPath = (domain: string, subRouteId: string): string | null => {
-  const d = DOMAINS_BY_ID[domain]
-  if (!d) return null
-  const sub = d.subRoutes.find((s) => s.id === subRouteId)
-  if (!sub) return null
-  return sub.path
-}
-
-/**
- * Like {@link getUpstreamPath} but tolerant: if the domain or sub-route is
- * unknown, fall back to the obvious `/v2/{domain}/{subRouteId}` shape so
- * power-users can still hit ad-hoc upstream paths. Returns the resolved
- * upstream path (without `/data` suffix).
- */
-export const resolveUpstreamPath = (domain: string, subRouteId: string): string => {
-  return getUpstreamPath(domain, subRouteId) ?? `${domain}/${subRouteId.replace(/^\/+/, '')}`
-}
-
-export {
-  aeoMeta,
-  ieoMeta,
-  co2EmissionsMeta,
-  coalMeta,
-  crudeOilImportsMeta,
-  densifiedBiomassMeta,
-  electricityMeta,
-  internationalMeta,
-  naturalGasMeta,
-  nuclearOutagesMeta,
-  rtoMeta,
-  sedsMeta,
-  stateElectricityProfilesMeta,
-  steoMeta,
-  totalEnergyMeta,
-}
+export const resolveUpstreamPath = (domain: string, subRouteId: string): string =>
+  DOMAINS_BY_ID[domain]?.subRoutes.find((s) => s.id === subRouteId)?.path ??
+  `${domain}/${subRouteId.replace(/^\/+/, '')}`

@@ -34,22 +34,16 @@ export const createApp = () => {
     .use(ontologyRoutes)
     .use(mcpEnabled ? mcpRoutes : new Elysia({ name: 'mcp-disabled' }))
     .onError(({ code, error, set, request }) => {
-      // 1) Decide the response status (existing logic, unchanged).
-      let status: number
-      if (code === 'VALIDATION') {
-        status = 400
-        set.status = status
-      } else if (error && typeof error === 'object' && 'code' in error && 'status' in error) {
-        const e = error as { status?: number; message?: string }
-        status = typeof e.status === 'number' ? e.status : 500
-        set.status = status
-      } else {
-        status = 500
-        set.status = status
-      }
+      // EiaApiError (and anything shaped like it) carries its own status.
+      const upstream =
+        code !== 'VALIDATION' && error && typeof error === 'object' && 'code' in error && 'status' in error
+          ? (error as { status?: number; message?: string })
+          : null
+      const status = code === 'VALIDATION' ? 400 : typeof upstream?.status === 'number' ? upstream.status : 500
+      set.status = status
 
-      // 2) Always emit a single structured error log line so the source
-      //    of any failure is recoverable from server logs.
+      // Always emit a single structured error log line so the source of any
+      // failure is recoverable from server logs.
       let path = request.url
       try {
         path = new URL(request.url).pathname
@@ -61,29 +55,11 @@ export const createApp = () => {
       // the real failures stay visible.
       const isNoise404 = status === 404 && /^\/(favicon\.ico|robots\.txt|apple-touch-icon.*|\.well-known\/.*)$/.test(path)
       if (!isNoise404) {
-        logRequestError({
-          method: request.method,
-          path,
-          elysiaCode: String(code),
-          status,
-          error,
-        })
+        logRequestError({ method: request.method, path, elysiaCode: String(code), status, error })
       }
 
-      // 3) Shape the response (existing logic, unchanged).
-      if (code === 'VALIDATION') {
-        return {
-          error: 'validation_error' as const,
-          message: error.message,
-        }
-      }
-      if (error && typeof error === 'object' && 'code' in error && 'status' in error) {
-        const e = error as { status?: number; message?: string }
-        return {
-          error: 'upstream_error' as const,
-          message: e.message ?? 'Upstream error',
-        }
-      }
+      if (code === 'VALIDATION') return { error: 'validation_error' as const, message: error.message }
+      if (upstream) return { error: 'upstream_error' as const, message: upstream.message ?? 'Upstream error' }
       return {
         error: 'internal_error' as const,
         message: error instanceof Error ? error.message : 'Unknown error',

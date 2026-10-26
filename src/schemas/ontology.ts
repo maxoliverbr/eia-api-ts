@@ -236,7 +236,6 @@ export const OntologyIndexSchema = t.Object({
     export: t.String(),
   }),
 })
-export type OntologyIndex = Static<typeof OntologyIndexSchema>
 
 export const OntologyClassListSchema = t.Object({
   total: t.Integer(),

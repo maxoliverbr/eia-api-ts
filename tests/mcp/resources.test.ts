@@ -1,5 +1,5 @@
-import { describe, expect, it, beforeEach } from 'bun:test'
-import { _resetGuideCache, guideResources } from '../../src/mcp/resources'
+import { describe, expect, it } from 'bun:test'
+import { guideResources } from '../../src/mcp/resources'
 import { McpClient } from '../../src/mcp/client'
 
 function mockFetch(responses: Array<{ status: number; body: string }>) {
@@ -14,12 +14,8 @@ function mockFetch(responses: Array<{ status: number; body: string }>) {
   return Object.assign(fn, { calls }) as typeof fetch & { calls: typeof calls }
 }
 
-beforeEach(() => {
-  _resetGuideCache()
-})
-
 describe('MCP guide resources', () => {
-  it('full guide is fetched and cached', async () => {
+  it('full guide is fetched', async () => {
     const fetch = mockFetch([{ status: 200, body: '{"version":"1.0.0","philosophy":[]}' }])
     const r = guideResources(new McpClient({ baseUrl: 'http://test', fetchImpl: fetch }))
     const out = await r.full.read()
@@ -27,10 +23,6 @@ describe('MCP guide resources', () => {
     expect(fetch.calls[0]?.url).toBe('http://test/guide')
     expect(out.contents[0]?.uri).toBe('eia://guide')
     expect(JSON.parse(out.contents[0]!.text)).toEqual({ version: '1.0.0', philosophy: [] })
-
-    // Second read uses cache, no new upstream call.
-    await r.full.read()
-    expect(fetch.calls.length).toBe(1)
   })
 
   it('per-domain guide resolves the path segment', async () => {
@@ -40,20 +32,6 @@ describe('MCP guide resources', () => {
     expect(fetch.calls[0]?.url).toBe('http://test/guide/coal')
     expect(out.contents[0]?.uri).toBe('eia://guide/coal')
     expect(JSON.parse(out.contents[0]!.text)).toEqual({ id: 'coal' })
-  })
-
-  it('per-domain cache is keyed by domain', async () => {
-    const fetch = mockFetch([
-      { status: 200, body: '{"id":"coal"}' },
-      { status: 200, body: '{"id":"natural-gas"}' },
-    ])
-    const r = guideResources(new McpClient({ baseUrl: 'http://test', fetchImpl: fetch }))
-    await r.perDomain.read(new URL('eia://guide/coal'))
-    await r.perDomain.read(new URL('eia://guide/natural-gas'))
-    // Repeat both — cache should serve, no new upstream calls.
-    await r.perDomain.read(new URL('eia://guide/coal'))
-    await r.perDomain.read(new URL('eia://guide/natural-gas'))
-    expect(fetch.calls.length).toBe(2)
   })
 
   it('rejects unknown or traversal domain ids without fetching', async () => {

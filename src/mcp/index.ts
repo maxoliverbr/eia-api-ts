@@ -16,6 +16,18 @@ import * as tools from './tools'
 import { registerGuideResources } from './resources'
 import type { McpClient } from './client'
 
+const TOOLS = {
+  browse_relations: tools.browseRelations,
+  get_class_detail: tools.getClassDetail,
+  get_domain_mapping: tools.getDomainMapping,
+  get_relation_evidence: tools.getRelationEvidence,
+  search_ontology: tools.searchOntology,
+  list_facets: tools.listFacets,
+  get_facet_values: tools.getFacetValues,
+  query_eia: tools.queryEia,
+  query_with_summary: tools.queryWithSummary,
+}
+
 export function buildMcp(client: McpClient): McpServer {
   const server = new McpServer(
     {
@@ -37,25 +49,13 @@ export function buildMcp(client: McpClient): McpServer {
     },
   )
 
-  // 9 tools — build each tool object once, then register config + execute.
-  const relations = tools.browseRelations(client)
-  const classDetail = tools.getClassDetail(client)
-  const domainMapping = tools.getDomainMapping(client)
-  const relationEvidence = tools.getRelationEvidence(client)
-  const ontologySearch = tools.searchOntology(client)
-  const facets = tools.listFacets(client)
-  const facetValues = tools.getFacetValues(client)
-  const query = tools.queryEia(client)
-  const querySummary = tools.queryWithSummary(client)
-  server.registerTool('browse_relations', relations, relations.execute)
-  server.registerTool('get_class_detail', classDetail, classDetail.execute)
-  server.registerTool('get_domain_mapping', domainMapping, domainMapping.execute)
-  server.registerTool('get_relation_evidence', relationEvidence, relationEvidence.execute)
-  server.registerTool('search_ontology', ontologySearch, ontologySearch.execute)
-  server.registerTool('list_facets', facets, facets.execute)
-  server.registerTool('get_facet_values', facetValues, facetValues.execute)
-  server.registerTool('query_eia', query, query.execute)
-  server.registerTool('query_with_summary', querySummary, querySummary.execute)
+  // 9 tools
+  for (const [name, make] of Object.entries(TOOLS)) {
+    const tool = make(client)
+    // Each tool pairs its own inputSchema with its execute; the union of all
+    // nine doesn't fit registerTool's per-schema generics, so erase it here.
+    server.registerTool(name, tool as never, tool.execute as never)
+  }
 
   // 2 resources
   registerGuideResources(server, client)
