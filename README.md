@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/eia-api-ts-logo.png" alt="eia-api-ts logo" width="600">
+  <img src="assets/logo.svg" alt="eia-api-ts logo" width="128" height="128">
 </p>
 
 # eia-api-ts
