@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/eia-api-ts-logo.png" alt="eia-api-ts logo" width="600">
+</p>
+
 # eia-api-ts
 
 > Modern, fully-typed wrapper around the **EIA APIv2** for agentic projects.
