@@ -19,8 +19,7 @@
     "forceConsistentCasingInFileNames": true,
     "verbatimModuleSyntax": false,
     "noEmit": true,
-    "jsx": "preserve",
-    "baseUrl": "."
+    "jsx": "preserve"
   },
   "include": ["src/**/*", "tests/**/*", "scripts/**/*", "examples/**/*", "elysia.config.ts"],
   "exclude": ["node_modules", "dist"]
