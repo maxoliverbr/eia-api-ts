@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="512" height="512" role="img" aria-label="eia-api-ts logo">
+  <title>eia-api-ts</title>
+  <defs>
+    <linearGradient id="eia-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#15264A"/>
+      <stop offset="1" stop-color="#060A15"/>
+    </linearGradient>
+    <linearGradient id="eia-bolt" x1="76" y1="31" x2="56" y2="91" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#77EFD9"/>
+      <stop offset="1" stop-color="#24B39A"/>
+    </linearGradient>
+    <linearGradient id="eia-brace" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5873A3"/>
+      <stop offset="1" stop-color="#34466B"/>
+    </linearGradient>
+    <filter id="eia-glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="5"/>
+    </filter>
+    <clipPath id="eia-tile">
+      <rect width="128" height="128" rx="30"/>
+    </clipPath>
+    <pattern id="eia-grid" width="16" height="16" patternUnits="userSpaceOnUse">
+      <path d="M16 0H0V16" fill="none" stroke="#9DB4E0" stroke-opacity="0.07" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="128" height="128" rx="30" fill="url(#eia-bg)"/>
+  <rect width="128" height="128" fill="url(#eia-grid)" clip-path="url(#eia-tile)"/>
+  <g fill="none" stroke="url(#eia-brace)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M40 27C32 27 30 31 30 39V55C30 60.5 27 64 21 64C27 64 30 67.5 30 73V89C30 97 32 101 40 101"/>
+    <path d="M88 27C96 27 98 31 98 39V55C98 60.5 101 64 107 64C101 64 98 67.5 98 73V89C98 97 96 101 88 101"/>
+  </g>
+  <path d="M76 31L50 68L78 61L56.4 90.9" fill="none" stroke="#2EE6C5" stroke-opacity="0.55" stroke-width="10" filter="url(#eia-glow)"/>
+  <path d="M76 31L50 68L78 61L56.4 90.9" fill="none" stroke="url(#eia-bolt)" stroke-width="10" stroke-linejoin="miter" stroke-miterlimit="5"/>
+  <circle cx="52" cy="97" r="7.5" fill="#070C18" stroke="#24B39A" stroke-width="5"/>
+  <circle cx="76" cy="31" r="12" fill="#FFB020" opacity="0.25" filter="url(#eia-glow)"/>
+  <circle cx="76" cy="31" r="8" fill="#FFB020"/>
+</svg>
