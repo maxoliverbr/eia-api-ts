@@ -163,7 +163,6 @@ export const SearchRequestSchema = t.Object({
   q: t.String({ minLength: 1, description: 'Search query (keywords, e.g. "coal production").' }),
   limit: t.Optional(t.Integer({ minimum: 1, maximum: 100, default: 10 })),
 })
-export type SearchRequest = Static<typeof SearchRequestSchema>
 
 export const SearchResponseSchema = t.Object({
   query: t.String(),

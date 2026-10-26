@@ -10,21 +10,9 @@
 import { z } from 'zod'
 import type { McpClient } from './client'
 import { summarizeRows, type RawEiaRow } from './summarise'
-import type { RelationPredicate } from '../schemas/ontology'
+import { RelationPredicateSchema, type RelationPredicate } from '../schemas/ontology'
 
-const RELATION_PREDICATES = [
-  'produces',
-  'consumes',
-  'imports',
-  'exports',
-  'stores',
-  'transmits',
-  'locatedIn',
-  'measuredBy',
-  'measuredAt',
-  'forecastedBy',
-  'emits',
-] as const satisfies readonly RelationPredicate[]
+const RELATION_PREDICATES = RelationPredicateSchema.anyOf.map((s) => s.const) as [RelationPredicate, ...RelationPredicate[]]
 
 /** Wrap any value as an MCP tool result with a JSON text content block. */
 const asToolResult = (value: unknown) => ({
@@ -51,11 +39,9 @@ export const browseRelations = (client: McpClient) => ({
     predicate?: string
     object?: string
   }) => {
-    const params = new URLSearchParams()
-    if (subject) params.set('subject', subject)
-    if (predicate) params.set('predicate', predicate)
-    if (object) params.set('object', object)
-    const qs = params.toString()
+    const qs = new URLSearchParams(
+      Object.entries({ subject, predicate, object }).filter((e): e is [string, string] => !!e[1]),
+    ).toString()
     const value = await client.get(`/ontology/relations${qs ? `?${qs}` : ''}`)
     return asToolResult(value)
   },

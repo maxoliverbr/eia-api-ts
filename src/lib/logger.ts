@@ -59,13 +59,8 @@ function safeStringify(value: unknown): string | undefined {
 function emit(level: Level, message: string, fields?: Record<string, unknown>): void {
   if (!shouldLog(level)) return
   const entry = { at: new Date().toISOString(), level, message, ...(fields ?? {}) }
-  if (currentLogLevel() === 'debug') {
-    // eslint-disable-next-line no-console
-    console.error(JSON.stringify(entry, null, 2))
-  } else {
-    // eslint-disable-next-line no-console
-    console.error(JSON.stringify(entry))
-  }
+  // eslint-disable-next-line no-console
+  console.error(JSON.stringify(entry, null, currentLogLevel() === 'debug' ? 2 : undefined))
 }
 
 export const logger = {

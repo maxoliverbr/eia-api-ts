@@ -36,7 +36,6 @@ export const DecisionTreeNodeSchema = t.Object({
     t.String({ description: 'Optional direct endpoint suggestion if the branch resolves to a single call.' })
   ),
 })
-export type DecisionTreeNode = Static<typeof DecisionTreeNodeSchema>
 
 // ---------------------------------------------------------------------------
 // AntiPattern
