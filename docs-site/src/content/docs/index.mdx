@@ -1,0 +1,79 @@
+---
+title: eia-api-ts
+description: A typed, agent-ready wrapper around the EIA API v2.
+template: splash
+hero:
+  tagline: >
+    A modern, fully-typed wrapper around the U.S. Energy Information
+    Administration's REST API — built for AI agents and TypeScript clients.
+  actions:
+    - text: Get started
+      link: /start/installation/
+      icon: right-arrow
+      variant: primary
+    - text: View on GitHub
+      link: https://github.com/MaxwellCalkin/eia-api-ts
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+The U.S. Energy Information Administration (EIA) exposes a rich but sprawling
+REST API — 100+ endpoints across 15 data domains. **eia-api-ts** wraps that
+surface in a small, uniform, **end-to-end typed** API designed for AI agents
+and modern TypeScript clients.
+
+## Why use it
+
+<CardGrid stagger>
+  <Card title="Unified POST /query" icon="rocket">
+    Fetch any EIA dataset through one endpoint. No more navigating 100+ route
+    trees by hand.
+  </Card>
+  <Card title="Self-describing" icon="magnifier">
+    Agents can call `/domains`, `/routes/*`, `/search`, and `/guide` to learn
+    the API dynamically — no hard-coded domain knowledge required.
+  </Card>
+  <Card title="End-to-end types" icon="list-format">
+    TypeBox schemas flow into Elysia routes, into Eden Treaty clients, into
+    your agent's code. Zero `any`.
+  </Card>
+  <Card title="Agent guide at /guide" icon="open-book">
+    A machine-readable playbook (workflow, decision tree, anti-patterns,
+    copy-pasteable recipes). Fetch once, use as a system prompt.
+  </Card>
+  <Card title="Energy ontology" icon="puzzle">
+    An RDF-style knowledge graph of energy classes and typed relations that
+    bridges abstract concepts ("Coal emits CO₂") to concrete EIA domains.
+  </Card>
+  <Card title="MCP server at /mcp" icon="discord">
+    The same surface, exposed as 9 tools + 2 resources for any Model Context
+    Protocol client (Claude Desktop, Cursor, etc.). One-line opt-in.
+  </Card>
+</CardGrid>
+
+## Jump in
+
+<CardGrid>
+  <LinkCard
+    title="Installation →"
+    description="Install Bun, clone the repo, configure your EIA API key."
+    href="/start/installation/"
+  />
+  <LinkCard
+    title="Quick start →"
+    description="Run the server and make your first query in under five minutes."
+    href="/start/quick-start/"
+  />
+  <LinkCard
+    title="Domains reference →"
+    description="All 15 EIA data domains, each with worked examples."
+    href="/domains/"
+  />
+  <LinkCard
+    title="Agent guide →"
+    description="The full agent playbook, fetched once and used as a system prompt."
+    href="/concepts/guide/"
+  />
+</CardGrid>

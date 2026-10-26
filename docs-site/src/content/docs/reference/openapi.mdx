@@ -1,0 +1,83 @@
+---
+title: OpenAPI
+description: The bundled OpenAPI 3.1 spec and how to use it.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The wrapper ships an OpenAPI 3.1 spec generated from the TypeBox schemas.
+Two endpoints expose it:
+
+| Endpoint | What |
+|---|---|
+| `GET /openapi` | Swagger UI in the browser |
+| `GET /openapi/json` | Raw OpenAPI 3.1 spec as JSON |
+
+You can also dump the spec to disk:
+
+```bash
+bun run dump-openapi
+# writes openapi.json to the repo root
+```
+
+## Using the spec
+
+### Import into Postman / Insomnia / Hoppscotch
+
+```bash
+curl http://localhost:3000/openapi/json > openapi.json
+# File → Import → openapi.json
+```
+
+### Generate a typed client
+
+The wrapper's `app` type is exported from `elysia.config.ts`, so an
+[Eden Treaty](/guides/eden-treaty/) client can be derived directly without
+parsing the OpenAPI spec. If you want a client in a different language,
+feed `openapi.json` to:
+
+- [openapi-generator](https://openapi-generator.tech/) — Java, Go, Python,
+  C#, Rust, etc.
+- [quicktype](https://quicktype.io/) — TypeScript, Swift, Kotlin
+- [orval](https://orval.dev/) — TypeScript with TanStack Query integration
+
+### Use as a system prompt
+
+The OpenAPI spec is a complete description of every endpoint, request body,
+and response shape. Some agents accept it directly as a tool manifest:
+
+```ts
+const spec = await fetch('http://localhost:3000/openapi/json').then(r => r.json())
+const agent = new Agent({
+  // ...
+  tools: openapiToTools(spec),  // or your own adapter
+})
+```
+
+<Aside type="tip">
+  For the full agent experience, use the
+  [agent guide](/concepts/guide/) (`GET /guide`) instead — it bundles the
+  workflow, decision tree, anti-patterns, and recipes alongside the API
+  surface.
+</Aside>
+
+## Spec contents
+
+The spec covers every route the wrapper exposes, including:
+
+- All 30+ HTTP endpoints (meta, discovery, search, query, guide, ontology)
+- Every domain and sub-route
+- Every facet and facet value (when materialized)
+- All request body schemas and response envelope types
+- All error responses (`400`, `404`, `422`, `502`)
+- Security scheme documentation (`ApiKey` on the server side)
+
+The spec is regenerated on every server restart, so it's always in sync
+with the running code.
+
+## Schema documentation
+
+Every schema in the spec carries a `description` field sourced from the
+TypeBox definition. If you add a field to a schema, add a description too —
+it shows up in Swagger UI, in generated clients, and in any docs tool that
+reads OpenAPI.

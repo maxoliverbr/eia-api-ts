@@ -1,0 +1,53 @@
+---
+title: Agents overview
+description: Building AI agents that use the EIA wrapper.
+---
+
+import { LinkCard } from '@astrojs/starlight/components';
+
+The wrapper is **built for agents**. Three patterns cover the spectrum:
+
+<LinkCard
+  title="Mastra + OpenRouter"
+  description="A standard Mastra agent with six wrapper tools. Produces a domain-specific insight report end-to-end."
+  href="/agents/mastra/"
+/>
+<LinkCard
+  title="Ontology-first"
+  description="Start from the energy ontology (no hardcoded domain knowledge), then run a single data query. Works with or without an LLM."
+  href="/agents/ontology-first/"
+/>
+<LinkCard
+  title="MCP client"
+  description="The same surface, accessed via Model Context Protocol. Use the wrapper as a tool provider for any MCP-compatible client."
+  href="/agents/mcp-client/"
+/>
+
+## Common patterns
+
+Every agent that uses the wrapper should:
+
+1. **Fetch `/guide` once at startup** — use it as the system prompt.
+2. **Use the canonical 5-step loop** — search → inspect → facet → resolve →
+   query. See [Multi-step agent](/guides/multi-step-agent/).
+3. **Handle the four error classes** — 422 / 400 / 502 / 401. See
+   [Error handling](/guides/error-handling/).
+4. **Cache `/guide`** — it has a 1-hour TTL on the server; fetch once per
+   session, not per call.
+5. **Trust the metadata** — the wrapper's domain metadata carries `agentHints`,
+   `taskToRoute`, `columnDescriptions`, and `agentGuidance`. Read these
+   before guessing.
+
+## When to use which pattern
+
+| Pattern | When |
+|---|---|
+| **Mastra + OpenRouter** | You need an LLM to interpret free-text user intent and route to the right dataset. |
+| **Ontology-first** | You have structured concepts ("Coal emits CO₂") and want to map them to EIA domains without an LLM. Also great for LLM agents that benefit from a reasoning scaffold. |
+| **MCP client** | You're building (or using) an MCP-compatible client — Claude Desktop, Cursor, custom. |
+
+## Reference
+
+- [`examples/agents/`](https://github.com/MaxwellCalkin/eia-api-ts/tree/main/examples/agents) — every runnable example
+- [Agent guide concept](/concepts/guide/) — the `/guide` endpoint reference
+- [Multi-step agent guide](/guides/multi-step-agent/) — the canonical 5-step loop

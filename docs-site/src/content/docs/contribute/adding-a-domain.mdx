@@ -1,0 +1,129 @@
+---
+title: Adding a domain
+description: Extend the wrapper with a new EIA data domain.
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+Adding a new domain is intentionally simple. The wrapper is built so a new
+domain shows up everywhere — `/domains`, `/routes/*`, `/query`,
+`/search`, `/guide`, OpenAPI, and the ontology — with **zero additional
+plumbing**.
+
+<Steps>
+
+1. **Create the domain file**
+
+   Drop a new file at `src/domains/my-domain.ts` exporting a `DomainMeta`:
+
+   ```ts
+   import type { DomainMeta } from '../schemas/domain'
+   import { buildSubRoute } from './_sub'
+
+   export const myDomainMeta: DomainMeta = {
+     id: 'my-domain',
+     name: 'My Domain',
+     description: 'A short description of what this domain covers.',
+     tags: ['tag1', 'tag2'],
+     useCases: [
+       'What can users do with this data?',
+       'Another use case.',
+     ],
+     subRoutes: [
+       buildSubRoute('my-domain', {
+         id: 'primary-dataset',
+         summary: 'Primary dataset',
+         description: 'What this dataset covers.',
+         tags: ['primary'],
+         dateRange: { start: '2010', end: null },
+         typicalFrequency: 'monthly',
+         facetsHint: ['regionId', 'sectorId'],
+       }),
+     ],
+     relatedDomains: ['electricity'],
+   }
+   ```
+
+2. **Register the domain**
+
+   Edit `src/domains/index.ts`:
+
+   ```ts
+   import { myDomainMeta } from './my-domain'
+
+   export const DOMAINS: readonly DomainMeta[] = [
+     // ... existing domains ...
+     myDomainMeta,
+   ] as const
+   ```
+
+3. **Done**
+
+   The new domain is now:
+   - Reachable via `POST /query` (e.g. `{ domain: "my-domain", route: "primary-dataset" }`)
+   - Listed in `GET /domains` and `GET /domains/my-domain`
+   - Indexed by `POST /search`
+   - Documented in the OpenAPI spec
+   - Included in `/guide` (full + per-domain slice)
+
+4. **(Recommended) Add agent metadata**
+
+   Fill in the optional fields on `DomainMeta` so agents have rich guidance:
+
+   - `playbook.steps[]` — the canonical loop for this domain
+   - `commonQueries[]` — runnable query templates
+   - `agentHints.warnings[]` — things to watch out for
+   - `agentHints.gotchas[]` — non-obvious behavior
+   - `taskToRoute` — intent → sub-route id map
+   - `agentGuidance` on each `SubRouteMeta` — when to use, when not to
+   - `columnDescriptions` on each `SubRouteMeta` — column name → human
+     description
+
+   See `src/domains/coal.ts` for the most thoroughly documented example.
+
+5. **(Optional) Map to ontology classes**
+
+   Add a `DomainOntologyMapping` entry in `src/ontology/mappings.ts` so
+   the ontology tools know which classes your domain instantiates. This
+   lets ontology-first agents reason about your domain.
+
+</Steps>
+
+<Aside type="tip">
+  The `buildSubRoute()` helper in `_sub.ts` keeps the sub-route shape
+  consistent across domains — use it. It fills in `path`,
+  `prerequisites`, and other derived fields automatically.
+</Aside>
+
+## What gets auto-derived
+
+When you register a domain, the wrapper derives several things for you:
+
+- **Canonical upstream path** — `getUpstreamPath(domain, subRouteId)`
+  looks at each sub-route's `path` field, so you can use friendly ids like
+  `rto/daily-fuel-type-data` instead of the full
+  `electricity/rto/daily-fuel-type-data`.
+- **OpenAPI documentation** — every sub-route becomes a documented entry
+  under `/openapi`.
+- **Search index** — domain name, description, sub-route ids, tags, and
+  use cases are all indexed.
+
+## Testing
+
+Run the existing test suite to make sure nothing regressed:
+
+```bash
+bun test
+```
+
+For your new domain, drop a small example at `examples/domains/my-domain.ts`
+that issues one well-typed `POST /query` and prints the response.
+
+## Reference
+
+- [`src/domains/_sub.ts`](https://github.com/MaxwellCalkin/eia-api-ts/blob/main/src/domains/_sub.ts)
+  — `buildSubRoute()` helper
+- [`src/schemas/domain.ts`](https://github.com/MaxwellCalkin/eia-api-ts/blob/main/src/schemas/domain.ts)
+  — `DomainMeta` and `SubRouteMeta` schemas
+- [`src/domains/coal.ts`](https://github.com/MaxwellCalkin/eia-api-ts/blob/main/src/domains/coal.ts)
+  — the most thoroughly documented domain

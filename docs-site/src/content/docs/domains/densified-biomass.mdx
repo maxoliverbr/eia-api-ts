@@ -1,0 +1,61 @@
+---
+title: Densified Biomass
+description: Wood pellet and densified biomass industry data by region.
+---
+import { Aside } from "@astrojs/starlight/components";
+
+**Tags**: `biomass`, `wood-pellets`, `renewable`, `us`
+
+**Use cases**: track regional wood pellet production capacity; analyze
+sales and prices by region; monitor feedstock availability and cost.
+
+## Sub-routes (8)
+
+| Sub-route | Summary | Typical frequency | Date range |
+|---|---|---|---|
+| `capacity-by-region` | Production capacity by region | monthly | 2014 → |
+| `characteristics-by-region` | Physical/chemical characteristics by region | monthly | 2014 → |
+| `export-sales-and-price` | Export sales volumes and prices | monthly | 2014 → |
+| `feedstocks-and-cost` | Feedstock types and costs | monthly | 2014 → |
+| `inventories-by-region` | End-of-period inventories by region | monthly | 2014 → |
+| `production-by-region` | Production volumes by region | monthly | 2014 → |
+| `sales-and-price-by-region` | Domestic sales and prices by region | monthly | 2014 → |
+| `wood-pellet-plants` | Plant-level data | **annual only** | 2014 → |
+
+<Aside type="caution">
+  The `wood-pellet-plants` sub-route is **annual-only**. Upstream rejects
+  `frequency=monthly` for this route.
+</Aside>
+
+## Worked example
+
+```bash
+# Monthly production by region
+curl -X POST http://localhost:3000/query \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "domain": "densified-biomass",
+    "route": "production-by-region",
+    "frequency": "monthly",
+    "start": "2023-01",
+    "end": "2023-12",
+    "length": 5
+  }'
+
+# Annual wood-pellet-plant capacity (NOT monthly)
+curl -X POST http://localhost:3000/query \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "domain": "densified-biomass",
+    "route": "wood-pellet-plants",
+    "frequency": "annual",
+    "start": "2023",
+    "end": "2023",
+    "length": 3
+  }'
+```
+
+## Related domains
+
+- [Electricity](/domains/electricity/) — biomass generation by fuel
+- [Total Energy](/domains/total-energy/) — national renewable aggregate

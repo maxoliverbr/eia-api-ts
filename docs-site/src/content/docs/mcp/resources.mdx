@@ -1,0 +1,64 @@
+---
+title: MCP Resources
+description: The 2 resources exposed by /mcp.
+---
+
+Both resources are read-through caches of the EIA REST API's `/guide`
+endpoint, with a 1-hour TTL on the server.
+
+## 1. `eia://guide`
+
+**Full agent playbook.** The same JSON you'd get from `GET /guide` on the
+REST API: `summary`, `philosophy[]`, `workflow.steps[]`, `decisionTree[]`,
+`antiPatterns[]`, `commonRecipes[]`, `domains[]`, `endpoints`.
+
+Use this as a system prompt / context block for an agent. Fetch once per
+session and cache — the server caches it for an hour.
+
+```ts
+const mcp = new MCPClient({ servers: { eia: { url: new URL('http://localhost:3000/mcp') } } })
+const guide = await mcp.readResource('eia://guide')
+```
+
+## 2. `eia://guide/{domainId}`
+
+**Per-domain slice.** The same JSON you'd get from `GET /guide/{domainId}`:
+`playbook`, `commonQueries`, `agentHints`, `taskToRoute`, `subRoutes[]`
+(with `agentGuidance` and `columnDescriptions`).
+
+Useful when you know the domain up-front and don't need the full playbook.
+
+```ts
+const ngGuide = await mcp.readResource('eia://guide/natural-gas')
+```
+
+| Domain | Resource URI |
+|---|---|
+| Coal | `eia://guide/coal` |
+| Electricity | `eia://guide/electricity` |
+| Natural Gas | `eia://guide/natural-gas` |
+| ... | `eia://guide/{id}` for any of the 15 domains |
+
+## Cache behavior
+
+- **TTL**: 1 hour on the server.
+- **Per-resource**: cached separately — fetching `eia://guide/coal` doesn't
+  invalidate the full `eia://guide` cache and vice versa.
+- **Cache key**: includes the domain id; collisions impossible.
+
+## When to use which
+
+| | `eia://guide` | `eia://guide/{id}` |
+|---|---|---|
+| Full agent context | ✓ | — |
+| Domain-specific context | — | ✓ |
+| Smaller payload | — | ✓ (just one domain) |
+
+Most agents will fetch `eia://guide` once at startup. If you know the
+domain up-front, the per-domain resource is smaller.
+
+## Reference
+
+- [`src/mcp/resources.ts`](https://github.com/MaxwellCalkin/eia-api-ts/blob/main/src/mcp/resources.ts)
+  — implementation
+- [Agent guide concept](/concepts/guide/) — the underlying `/guide` endpoint

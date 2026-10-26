@@ -1,0 +1,51 @@
+---
+title: STEO
+description: Short Term Energy Outlook — short-term projections of U.S. energy indicators.
+---
+
+**Tags**: `projection`, `short-term`, `forecast`, `us`
+
+**Use cases**: forecast near-term U.S. energy prices; track short-term
+production and consumption trends; compare STEO forecasts to actuals.
+
+## Sub-routes (1)
+
+| Sub-route | Summary | Typical frequency | Date range |
+|---|---|---|---|
+| `data` | STEO data (all records) | monthly | 2010 → |
+
+Flat domain — one route, full dataset.
+
+## Facets
+
+| Facet id | Casing | Example values |
+|---|---|---|
+| `seriesId` | camelCase | STEO series codes |
+
+## Worked example
+
+```bash
+curl -X POST http://localhost:3000/query \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "domain": "steo",
+    "route": "data",
+    "frequency": "monthly",
+    "start": "2024-01",
+    "end": "2025-06",
+    "length": 5
+  }'
+```
+
+## Agent guidance
+
+- STEO is a **forecast** — values include both historical actuals and
+  EIA's projections for the next ~24 months. Filter on a series id and a
+  date range that matches the timeframe you want.
+- Compare two STEO vintages by fetching the same series from different
+  publication dates.
+
+## Related domains
+
+- [AEO](/domains/aeo/) — long-term projections (publication-year keyed)
+- [Total Energy](/domains/total-energy/) — historical aggregate

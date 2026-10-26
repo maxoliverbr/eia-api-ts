@@ -1,0 +1,90 @@
+---
+title: Eden Treaty (typed client)
+description: End-to-end typed calls with @elysiajs/eden.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+For TypeScript projects, [Eden Treaty](https://elysiajs.com/eden/overview)
+gives you a fully-typed client derived from the server's route definitions.
+Change the server, change the client — no manual type maintenance.
+
+<Aside type="note">
+  This guide assumes you've already installed `@elysiajs/eden` as a dev
+  dependency: <br />
+  `bun add -d @elysiajs/eden`
+</Aside>
+
+## Setup
+
+The wrapper's `app` type is exported from `elysia.config.ts`:
+
+```ts
+import { treaty } from '@elysiajs/eden'
+import type { app } from 'eia-api-ts/elysia.config'
+
+const api = treaty<typeof app>('http://localhost:3000')
+```
+
+## Example: discover → query
+
+```ts
+// 1. List domains — `data` is fully typed as { domains: DomainMeta[] }
+const domains = await api.domains.get()
+if (domains.error || !domains.data) throw new Error('no domains')
+console.log(`${domains.data.domains.length} domains available`)
+
+// 2. Inspect the natural-gas domain
+const ng = await api.domains({ domain: 'natural-gas' }).get()
+if (ng.error || !ng.data) throw new Error('no natural-gas domain')
+console.log(`\n${ng.data.name} (${ng.data.subRoutes.length} sub-routes):`)
+for (const s of ng.data.subRoutes) console.log(`  - ${s.id}: ${s.summary}`)
+
+// 3. Pick a sub-route and run a query — body shape is type-checked
+const target = ng.data.subRoutes.find((s) => s.id === 'pri/sum')
+if (!target) throw new Error('no pri/sum sub-route')
+
+const result = await api.query.post({
+  domain: 'natural-gas',
+  route: target.id,
+  frequency: 'annual',
+  start: '2020',
+  end: '2024',
+  facets: { duoarea: ['SCA'] }, // filter to California
+  data: ['value'],
+  length: 5,
+})
+if (result.error || !result.data) throw new Error('no result')
+
+console.log(`\nGot ${result.data.response.total} matching rows`)
+for (const row of result.data.response.data) console.log(row)
+```
+
+## What you get
+
+| Surface | Inferred type |
+|---|---|
+| `api.domains.get()` | `{ data: { domains: DomainMeta[] } } \| { error: ... }` |
+| `api.domains({ domain: 'coal' }).get()` | `{ data: DomainMeta } \| { error }` |
+| `api.query.post(body)` | `{ data: DataResponseContainer } \| { error: ValidationError }` |
+| `api.routes({ domain: 'coal' })({ '*': 'aggregate-production' }).facet.get()` | `{ data: FacetListResponse }` |
+
+Errors are typed too — `result.error.value` is the full validation error,
+not just an opaque `Error`.
+
+## When to use this pattern
+
+- **Long-lived TypeScript clients** — agents, web apps, scripts.
+- **Anything that benefits from autocomplete** — the IDE knows every domain
+  id, every route, every facet.
+- **Code review** — changing the server schema immediately surfaces breaking
+  changes in the client.
+
+## What it costs
+
+- One extra dev dependency (`@elysiajs/eden`).
+- A type-only import from the wrapper's source — you can't compile the
+  client without the wrapper's `src/` available.
+
+For a script you ship to a server where the wrapper isn't installed, stick
+with the [simple fetch](/guides/simple-fetch/) approach.

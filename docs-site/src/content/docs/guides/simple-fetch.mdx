@@ -1,0 +1,73 @@
+---
+title: Simple fetch
+description: A single POST /query with no dependencies.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The simplest way to call the wrapper: a single `POST /query` with plain
+`fetch`. No dependencies, no tooling. Useful for scripts, CI, and one-off
+explorations.
+
+<Aside type="note">
+  Assumes the dev server is running on `http://localhost:3000`
+  (`bun dev` in another terminal).
+</Aside>
+
+```ts
+async function main(): Promise<void> {
+  const response = await fetch('http://localhost:3000/query', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      domain: 'natural-gas',     // pick a domain
+      route: 'pri/sum',          // pick a route inside that domain
+      frequency: 'annual',       // resolution of the time series
+      start: '2020',             // inclusive lower bound on `period`
+      end: '2024',               // inclusive upper bound on `period`
+      facets: { duoarea: ['SCA'] }, // narrow to California only
+      data: ['value'],           // ask for the numeric column
+      length: 5,                 // cap to 5 rows
+    }),
+  })
+
+  const json = (await response.json()) as {
+    response: { data: Record<string, unknown>[]; total: number }
+  }
+
+  console.log(`Got ${json.response.total} matching rows; first:`)
+  console.log(json.response.data[0])
+}
+
+main()
+```
+
+## What the wrapper returns
+
+```json
+{
+  "response": {
+    "data": [
+      { "period": "2020", "duoarea": "SCA", "process-name": "...", "value": 13.45, "units": "$/Mcf" }
+    ],
+    "total": 1,
+    "dateFormat": "YYYY",
+    "description": "Natural gas prices, summary",
+    "frequency": "annual"
+  }
+}
+```
+
+The wrapper mirrors EIA's response envelope exactly so existing EIA clients
+can drop in. See [Unified /query](/concepts/unified-query/) for the full
+shape.
+
+## When to use this pattern
+
+- **Scripts and one-offs** — single-purpose, run-once tools.
+- **CI smoke tests** — verify the server is reachable.
+- **Notebooks** — quick experiments before reaching for a typed client.
+
+For anything more involved (a long-running agent, a UI, a multi-step
+workflow), use the [Eden Treaty](/guides/eden-treaty/) client for
+end-to-end type safety.

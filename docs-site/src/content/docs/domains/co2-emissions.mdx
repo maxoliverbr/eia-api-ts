@@ -1,0 +1,64 @@
+---
+title: CO₂ Emissions
+description: State- and sector-level U.S. CO₂ emissions from energy consumption.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+**Tags**: `emissions`, `co2`, `climate`, `state`, `us`
+
+**Use cases**: track state-level CO₂ emissions over time; analyze emissions
+intensity by fuel; compare per-capita or per-GDP emissions across states.
+
+<Aside type="caution">
+  The underlying data series behind these routes were **deprecated by EIA
+  in 2023**. The endpoints still respond (with the deprecated series), but
+  the canonical replacement is the [SEDS](/domains/seds/) domain. See
+  [Deprecations](/concepts/deprecations/) for the full story.
+</Aside>
+
+## Sub-routes (2)
+
+| Sub-route | Summary | Typical frequency | Date range |
+|---|---|---|---|
+| `co2-emissions-aggregates` | State-level aggregated CO₂ emissions | annual | 1970 → |
+| `co2-emissions-and-carbon-coefficients` | CO₂ emissions and fuel carbon coefficients | annual | 1970 → |
+
+## Facets
+
+| Facet id | Casing | Example values |
+|---|---|---|
+| `stateId` | camelCase | `"CA"`, `"TX"`, `"NY"` |
+| `sectorId` | camelCase | `"EC"` (electric power), `"IN"`, `"RS"`, `"CM"`, `"TR"` |
+| `fuelId` | camelCase | `"NG"`, `"COAL"`, `"PET"` |
+
+## Worked example
+
+```bash
+curl -X POST http://localhost:3000/query \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "domain": "co2-emissions",
+    "route": "co2-emissions-aggregates",
+    "frequency": "annual",
+    "start": "2022",
+    "end": "2022",
+    "facets": { "sectorId": ["EC"] },
+    "sort": [{ "column": "value", "direction": "desc" }],
+    "length": 10
+  }'
+```
+
+## Agent guidance
+
+- Use **camelCase** `sectorId`, not `sectorid` (case-sensitive upstream).
+- The sector `EC` is "Electric Power" — the most common filter for
+  state-level emissions analysis.
+- For new analytical work, prefer the [SEDS](/domains/seds/) domain — same
+  data, actively maintained.
+
+## Related domains
+
+- [Electricity](/domains/electricity/) — operational emissions data
+- [Total Energy](/domains/total-energy/) — national aggregate
+- [State Electricity Profiles](/domains/state-electricity-profiles/) — annual state emissions

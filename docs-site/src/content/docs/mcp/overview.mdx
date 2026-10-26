@@ -1,0 +1,87 @@
+---
+title: MCP Server overview
+description: Model Context Protocol endpoint at /mcp.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The wrapper exposes the same surface as a **Model Context Protocol** server
+at `/mcp`. Off by default; one env var enables it.
+
+```bash
+MCP_ENABLED=true EIA_API_KEY=... bun dev
+```
+
+Built on MCP TypeScript SDK v2 (`@modelcontextprotocol/server`) via `createMcpHandler` — Bun-native, no Node-HTTP bridge, stateless. Speaks the **2026-07-28** protocol; 2025-era clients (plain `initialize` handshake) are still served, statelessly. No Host/Origin validation is applied — keep `/mcp` on a trusted network or put a reverse proxy in front.
+
+<Aside type="note">
+  The EIA API key stays **server-side**. The MCP server only ever calls the
+  wrapper's own REST API; clients never see the upstream key.
+</Aside>
+
+## What it exposes
+
+- **9 tools** — `browse_relations`, `get_class_detail`, `get_domain_mapping`,
+  `get_relation_evidence`, `search_ontology`, `list_facets`,
+  `get_facet_values`, `query_eia`, `query_with_summary`
+- **2 resources** — `eia://guide` (full playbook) and
+  `eia://guide/{domainId}` (per-domain slice), read-through cache with 1h
+  TTL
+
+See [Tools](/mcp/tools/) and [Resources](/mcp/resources/) for the full
+reference.
+
+## Configure a client
+
+### Claude Desktop
+
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "eia": {
+      "url": "http://localhost:3000/mcp"
+    }
+  }
+}
+```
+
+### Cursor / Continue
+
+Same shape — add the URL under `mcpServers` in the client's config.
+
+### Programmatic (Mastra)
+
+```ts
+import { MCPClient } from '@mastra/mcp'
+
+const mcp = new MCPClient({
+  servers: { eia: { url: new URL('http://localhost:3000/mcp') } },
+})
+
+const tools = await mcp.getTools()
+```
+
+See the [MCP client agent](/agents/mcp-client/) guide for a full
+end-to-end example.
+
+## Why MCP
+
+The Model Context Protocol is an open standard for connecting agents to
+tools and data. The benefit of exposing the wrapper via MCP:
+
+- **Any MCP client works.** Claude Desktop, Cursor, custom agents — all
+  discover tools automatically.
+- **No per-client integration code.** The server publishes the schema; the
+  client introspects.
+- **Multi-server.** A single client can talk to multiple MCP servers
+  (EIA + Slack + Notion + ...).
+
+## Reference
+
+- [MCP Tools](/mcp/tools/) — the 9 tools
+- [MCP Resources](/mcp/resources/) — the 2 resources
+- [`src/mcp/`](https://github.com/MaxwellCalkin/eia-api-ts/tree/main/src/mcp)
+  — server implementation
+- [Model Context Protocol](https://modelcontextprotocol.io/) — the spec

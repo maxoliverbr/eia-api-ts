@@ -1,0 +1,94 @@
+---
+title: MCP client
+description: Use the wrapper's MCP server with any MCP-compatible client.
+---
+
+The wrapper exposes the same surface as a [Model Context Protocol](/mcp/overview/)
+endpoint. This means **any** MCP-compatible client (Claude Desktop, Cursor,
+Continue, custom agents) can use the wrapper as a tool provider without
+writing HTTP integration code.
+
+## Enable the MCP endpoint
+
+Set `MCP_ENABLED=true` and restart the server:
+
+```bash
+MCP_ENABLED=true EIA_API_KEY=... bun dev
+```
+
+The MCP endpoint is now mounted at `/mcp`.
+
+## Configure Claude Desktop
+
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json`
+(macOS) or the equivalent on your OS:
+
+```json
+{
+  "mcpServers": {
+    "eia": {
+      "url": "http://localhost:3000/mcp"
+    }
+  }
+}
+```
+
+Restart Claude Desktop. The 9 tools and 2 resources will appear in the
+"Tools" menu.
+
+## Use the MCP tools programmatically
+
+[`examples/agents/08-mastra-mcp-client.ts`](https://github.com/MaxwellCalkin/eia-api-ts/blob/main/examples/agents/08-mastra-mcp-client.ts)
+shows a Mastra agent that connects to the wrapper's MCP endpoint via
+`@mastra/mcp`'s `MCPClient` — it discovers both the tools and the
+system-prompt context (the `eia://guide` resource) over the wire.
+
+```ts
+import { MCPClient } from '@mastra/mcp'
+import { Agent } from '@mastra/core/agent'
+
+const mcp = new MCPClient({
+  servers: {
+    eia: { url: new URL('http://localhost:3000/mcp') },
+  },
+})
+
+const tools = await mcp.getTools()
+
+const agent = new Agent({
+  name: 'eia-via-mcp',
+  instructions: 'You are an energy analyst. Use the EIA MCP tools.',
+  model: openrouter('anthropic/claude-3.5-sonnet'),
+  tools,
+})
+
+const result = await agent.generate('Texas retail electricity prices in 2024?')
+```
+
+## The 9 tools
+
+See [Tools](/mcp/tools/) for the full reference.
+
+## The 2 resources
+
+See [Resources](/mcp/resources/) for the full reference.
+
+## Why use MCP instead of direct REST
+
+| | Direct REST | MCP |
+|---|---|---|
+| Schema discovery | Manual — read docs | Automatic — server publishes tools |
+| Transport | HTTP + JSON | Standardized MCP |
+| Compatibility | curl / fetch / Eden | Any MCP client |
+| Multi-server | DIY | Built-in (just add another `mcpServers` entry) |
+| Caching | DIY | Server-managed (1h TTL on `/guide`) |
+
+Use direct REST when you want full control (custom retry logic, batch
+calls, etc.). Use MCP when you want any agent to discover and use the
+wrapper with zero integration code.
+
+## Reference
+
+- [`examples/agents/08-mastra-mcp-client.ts`](https://github.com/MaxwellCalkin/eia-api-ts/blob/main/examples/agents/08-mastra-mcp-client.ts)
+- [MCP Server overview](/mcp/overview/) — what `/mcp` exposes
+- [Model Context Protocol](https://modelcontextprotocol.io/) — the spec

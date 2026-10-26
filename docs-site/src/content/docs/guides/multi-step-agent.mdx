@@ -1,0 +1,127 @@
+---
+title: Multi-step agent
+description: Realistic agent flow — search → inspect → facet → query → analyze.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+A realistic agent loop: discover the data, narrow it down, fetch it, then do
+a tiny analysis. Self-contained (no `examples/shared` import), so you can
+copy it into any project.
+
+<Aside type="note">
+  Assumes the dev server is running on `http://localhost:3000`
+  (`bun dev` in another terminal).
+</Aside>
+
+```ts
+type SearchHit = { domain: string; path: string; title: string; score: number }
+type SearchResponse = { query: string; total: number; hits: SearchHit[] }
+type SubRoute = { id: string; path: string; summary: string; typicalFrequency: string }
+type DomainMeta = { id: string; name: string; subRoutes: SubRoute[] }
+type FacetList = { response: { facetOptions: string[] } }
+type FacetValues = { response: { facets: { id: string; name?: string }[] } }
+type Row = { period: string; value: string | number; units?: string; [k: string]: unknown }
+type QueryResponse = { response: { data: Row[]; total: number } }
+
+const BASE = 'http://localhost:3000'
+
+async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, init)
+  if (!res.ok) throw new Error(`HTTP ${res.status} on ${path}`)
+  return res.json() as Promise<T>
+}
+
+async function main(): Promise<void> {
+  console.log('=== Agent flow: California natural gas prices, 2020–2024 ===\n')
+
+  // 1. Search by intent — find datasets that mention natural gas prices
+  console.log('--- 1. search "natural gas price" ---')
+  const search = await fetchJson<SearchResponse>('/search', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ q: 'natural gas price' }),
+  })
+  console.log(`Query "${search.query}" → ${search.total} hits`)
+  const top = search.hits[0]
+  if (!top) throw new Error('no hits')
+  console.log(`Top hit: ${top.path}  (${top.title}, score ${top.score.toFixed(1)})`)
+
+  // 2. Inspect the matched domain to learn its sub-routes
+  console.log('\n--- 2. inspect /domains/natural-gas ---')
+  const ng = await fetchJson<DomainMeta>('/domains/natural-gas')
+  console.log(`${ng.name}: ${ng.subRoutes.length} sub-routes`)
+  for (const s of ng.subRoutes) console.log(`  - ${s.id}: ${s.summary}`)
+  const priceRoute = ng.subRoutes.find((s) => s.id === 'pri/sum')
+  if (!priceRoute) throw new Error('no pri/sum route')
+
+  // 3. Discover the available facets for the chosen route
+  console.log('\n--- 3. list facets for natural-gas/pri/sum ---')
+  const facets = await fetchJson<FacetList>('/routes/natural-gas/pri/sum/facet')
+  console.log('Facets:', facets.response.facetOptions)
+
+  // 4. Pick a value for the geographic facet (`duoarea`)
+  console.log('\n--- 4. pick duoarea = California ---')
+  const areas = await fetchJson<FacetValues>(
+    '/routes/natural-gas/pri/sum/facet/duoarea',
+  )
+  const ca = areas.response.facets.find((f) => f.name === 'CALIFORNIA')
+  if (!ca) throw new Error('no California')
+  console.log(`Picked duoarea = ${ca.id} (${ca.name})`)
+
+  // 5. Run the query with the chosen facet and the numeric `value` column
+  console.log('\n--- 5. query California natural gas prices, 2020–2024 ---')
+  const result = await fetchJson<QueryResponse>('/query', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      domain: 'natural-gas',
+      route: 'pri/sum',
+      frequency: 'annual',
+      start: '2020',
+      end: '2024',
+      facets: { duoarea: [ca.id] },
+      data: ['value'],
+      sort: [{ column: 'period', direction: 'asc' }],
+      length: 100,
+    }),
+  })
+  console.log(`Got ${result.response.total} matching rows`)
+
+  // 6. Tiny analysis — residential price series for California
+  console.log('\n--- 6. analyze: residential price by year ---')
+  const residential = result.response.data.filter(
+    (r) => r['process-name'] === 'Price Delivered to Residential Consumers',
+  )
+  for (const row of residential) {
+    console.log(`  ${row.period}  $${row.value} ${row.units ?? ''}`)
+  }
+}
+
+main().catch((err) => {
+  console.error(err)
+  process.exit(1)
+})
+```
+
+## What this exercise teaches
+
+1. **The 5-step loop is mandatory.** Every agent should follow
+   search → inspect → facet → resolve → query. Skipping the facet lookup
+   step is the most common cause of "no data returned".
+2. **Facet values are case-sensitive.** The `name` "CALIFORNIA" is the
+   human-readable label; the `id` is what goes in the query. Always look up
+   the id — never guess.
+3. **The query response is uniform.** The same `response.data` shape comes
+   back regardless of domain — it's the upstream EIA envelope.
+
+## Variations
+
+- **Multi-domain comparison**: cross-domain join (e.g. state CO₂ vs
+  electricity net generation → emissions intensity). See
+  [`03-multi-domain-comparison.ts`](https://github.com/MaxwellCalkin/eia-api-ts/blob/main/examples/agents/03-multi-domain-comparison.ts).
+- **Trend analysis**: aggregate monthly → annual, then compute YoY. See
+  [`02-trend-analysis.ts`](https://github.com/MaxwellCalkin/eia-api-ts/blob/main/examples/agents/02-trend-analysis.ts).
+- **Error recovery**: handle 422 / 400 / 502 / 401 with retries. See
+  [Error handling](/guides/error-handling/) and
+  [`04-error-recovery.ts`](https://github.com/MaxwellCalkin/eia-api-ts/blob/main/examples/agents/04-error-recovery.ts).

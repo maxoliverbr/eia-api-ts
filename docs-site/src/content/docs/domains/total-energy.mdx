@@ -1,0 +1,65 @@
+---
+title: Total Energy
+description: U.S. aggregate energy — production, consumption, trade, intensity by source and sector.
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+**Tags**: `aggregate`, `national`, `consumption`, `production`, `us`
+
+**Use cases**: track total U.S. energy production and consumption;
+analyze net energy imports/exports; monitor energy intensity over time.
+
+## Sub-routes (1)
+
+| Sub-route | Summary | Typical frequency | Date range |
+|---|---|---|---|
+| `data` | Total energy data (all records) | monthly | 1949 → |
+
+Flat domain — one route, full dataset.
+
+## Facets
+
+| Facet id | Casing | Example values |
+|---|---|---|
+| `seriesId` | camelCase | MSN series codes (e.g. `"ELETPUS"` for US total electricity primary consumption) |
+
+<Aside type="caution">
+  The **only** facet on this domain is `seriesId` (and aliases). Facets
+  live at `/routes/total-energy/facet/{id}` — **not** under the `/data`
+  path.
+</Aside>
+
+## Worked example
+
+```bash
+# US total monthly electricity primary consumption
+curl -X POST http://localhost:3000/query \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "domain": "total-energy",
+    "route": "data",
+    "data": ["value"],
+    "frequency": "monthly",
+    "start": "2020-01",
+    "end": "2024-12",
+    "facets": { "msn": ["ELETPUS"] },
+    "length": 100
+  }'
+```
+
+## Agent guidance
+
+- **`seriesId` is the workhorse facet** — pick the right MSN code for the
+  metric you want. Listing `/routes/total-energy/facet/msn` gives the full
+  catalogue.
+- Total Energy is a **flat dataset**: monthly U.S. aggregates by MSN code.
+  Pair it with [SEDS](/domains/seds/) or [STEO](/domains/steo/) when you
+  need state-level or forecast data.
+
+## Related domains
+
+- [SEDS](/domains/seds/) — state-level breakdowns
+- [Electricity](/domains/electricity/) — operational electricity data
+- [AEO](/domains/aeo/) — long-term projections
+- [STEO](/domains/steo/) — short-term projections

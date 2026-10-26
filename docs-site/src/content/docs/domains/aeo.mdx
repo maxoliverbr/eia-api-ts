@@ -1,0 +1,63 @@
+---
+title: AEO
+description: Annual Energy Outlook — long-term projections of U.S. energy supply, demand, prices, emissions.
+---
+import { Aside } from "@astrojs/starlight/components";
+
+**Tags**: `projection`, `long-term`, `policy-neutral`, `us`
+
+**Use cases**: project future U.S. energy demand by sector and fuel;
+compare reference-case vs. side-case scenarios; investigate long-term
+price forecasts.
+
+<Aside type="caution">
+  Sub-routes are **publication years** (e.g. `2024`, `2025`, `2023`). The
+  `{year}` placeholder in the docs is a stand-in — call `GET /routes/aeo`
+  first to discover what's actually available.
+</Aside>
+
+## Sub-routes
+
+| Sub-route | Summary |
+|---|---|
+| `{year}` | Projections for the given AEO publication year |
+
+Each publication year carries its own scenario / series / region facets.
+
+## Worked example
+
+```bash
+# AEO 2025, 2025–2030 annual projection
+curl -X POST http://localhost:3000/query \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "domain": "aeo",
+    "route": "2025",
+    "frequency": "annual",
+    "start": "2025",
+    "end": "2030",
+    "length": 5
+  }'
+```
+
+## Agent guidance
+
+- **Discover available years first**:
+
+  ```bash
+  curl http://localhost:3000/routes/aeo | jq '.response.routes'
+  ```
+
+  This returns the list of publication years you can use as `route`.
+
+- **Use the agent guide for routing**: the `aeo` domain in `/guide/aeo`
+  ships a `taskToRoute` map and `commonQueries` with pre-built call
+  templates.
+
+- **AEO is a forecast**: values are projections, not historicals.
+
+## Related domains
+
+- [IEO](/domains/ieo/) — international long-term projections (same year pattern)
+- [STEO](/domains/steo/) — short-term outlook (monthly)
+- [Total Energy](/domains/total-energy/) — historical aggregate

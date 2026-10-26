@@ -1,0 +1,80 @@
+---
+title: Quick start
+description: Five minutes from clone to first useful query.
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+This walkthrough assumes you've already [installed eia-api-ts](/start/installation/)
+and have the server running on `http://localhost:3000`.
+
+<Steps>
+
+1. **List the available domains**
+
+   ```bash
+   curl http://localhost:3000/domains | jq '.domains | length'
+   # 15
+   ```
+
+   You should see 15 domains, each with metadata describing what it covers,
+   its use cases, and its sub-routes.
+
+2. **Inspect a specific domain**
+
+   ```bash
+   curl http://localhost:3000/domains/coal | jq '{name, subRoutes: (.subRoutes | length)}'
+   # { "name": "Coal", "subRoutes": 13 }
+   ```
+
+   The Coal domain has 13 sub-routes (production, consumption, exports, prices, etc.).
+
+3. **Discover the facets you can filter on**
+
+   ```bash
+   curl http://localhost:3000/routes/coal/aggregate-production/facet
+   # { "response": { "totalFacetOptions": 3, "facetOptions": ["stateRegionId", "coalRankId", "mineTypeId"] } }
+   ```
+
+4. **Pick a facet value**
+
+   ```bash
+   curl http://localhost:3000/routes/coal/aggregate-production/facet/stateRegionId \
+     | jq '.response.facets[] | select(.name == "Wyoming")'
+   ```
+
+5. **Run your first query**
+
+   ```bash
+   curl -X POST http://localhost:3000/query \
+     -H 'Content-Type: application/json' \
+     -d '{
+       "domain": "coal",
+       "route": "aggregate-production",
+       "frequency": "annual",
+       "start": "2020",
+       "end": "2024",
+       "length": 10
+     }'
+   ```
+
+   You should get back a JSON envelope with `response.data`, `response.total`,
+   and metadata.
+
+</Steps>
+
+<Aside type="tip">
+  Prefer TypeScript? Replace `curl` with `fetch` and the same JSON shape
+  works. For fully-typed calls, see
+  [Eden Treaty](/guides/eden-treaty/) — request and response types are
+  inferred from the server's route definitions.
+</Aside>
+
+## Where to go next
+
+- **[Unified /query](/concepts/unified-query/)** — the full request/response
+  shape, sort, pagination, errors
+- **[Facets](/concepts/facets/)** — how filtering actually works, and the
+  case-sensitivity gotchas
+- **[Discovery](/concepts/discovery/)** — `/domains`, `/routes/*`, `/search`
+- **[Agent guide](/concepts/guide/)** — `/guide` as a one-shot system prompt

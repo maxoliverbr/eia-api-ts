@@ -1,0 +1,63 @@
+---
+title: SEDS
+description: State Energy Data System — state-level consumption, prices, expenditures, CO₂.
+---
+import { Aside } from "@astrojs/starlight/components";
+
+**Tags**: `state`, `consumption`, `price`, `expenditure`, `us`
+
+**Use cases**: compare per-capita energy use across states; track
+state-level energy expenditures by sector; analyze state fuel-mix trends.
+
+## Sub-routes (1)
+
+| Sub-route | Summary | Typical frequency | Date range |
+|---|---|---|---|
+| `data` | SEDS data (all records) | annual | 1960 → |
+
+Flat domain — one route, full dataset.
+
+## Facets
+
+| Facet id | Casing | Example values |
+|---|---|---|
+| `stateId` | camelCase | `"TX"`, `"CA"`, `"NY"` |
+| `sectorId` | camelCase | `"RES"`, `"COM"`, `"IND"`, `"TRA"`, `"EC"` |
+| `fuelId` | camelCase | `"NG"`, `"COAL"`, `"PET"` |
+| `seriesId` | camelCase | SEDS series codes |
+
+<Aside type="caution">
+  There is **no** sectorId facet for some older SEDS queries. For
+  residential/industrial breakdowns, use the `seriesId` value rather than
+  trying to filter by sector.
+</Aside>
+
+## Worked example
+
+```bash
+# Texas total energy consumption 2020-2023
+curl -X POST http://localhost:3000/query \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "domain": "seds",
+    "route": "data",
+    "frequency": "annual",
+    "start": "2020",
+    "end": "2023",
+    "facets": { "stateId": ["TX"] },
+    "length": 5
+  }'
+```
+
+## Agent guidance
+
+- SEDS is the **canonical replacement** for the deprecated
+  [CO₂ Emissions](/domains/co2-emissions/) domain — same per-state CO₂
+  totals are available via the right `seriesId`.
+- All values are annual; SEDS does not have monthly data.
+
+## Related domains
+
+- [Total Energy](/domains/total-energy/) — national aggregate
+- [Electricity](/domains/electricity/) — operational electricity data
+- [State Electricity Profiles](/domains/state-electricity-profiles/) — annual state electricity summary

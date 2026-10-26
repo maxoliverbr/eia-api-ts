@@ -1,0 +1,106 @@
+---
+title: Mastra + OpenRouter
+description: A standard Mastra agent that wraps the wrapper's endpoints as tools.
+---
+
+The canonical "wrap the wrapper in tools, give them to an LLM" pattern.
+[`examples/agents/05-mastra-wyoming-natural-gas.ts`](https://github.com/MaxwellCalkin/eia-api-ts/blob/main/examples/agents/05-mastra-wyoming-natural-gas.ts)
+shows the full thing end-to-end.
+
+## Tools
+
+| Tool | Wraps | Purpose |
+|---|---|---|
+| `search_datasets` | `POST /search` | Find datasets by free-text |
+| `list_domains` | `GET /domains` | Discover the natural-gas domain |
+| `get_domain` | `GET /domains/:id` | List sub-routes for a domain |
+| `list_facets` | `GET /routes/.../facet` | Confirm a facet is usable |
+| `get_facet_values` | `GET /routes/.../facet/:id` | Discover Wyoming's duoarea code (`SWY`) |
+| `query_eia` | `POST /query` | Raw query (debugging) |
+| `query_with_summary` | `POST /query` + summarise | Primary tool — injects `data:["value"]`, groups by series, returns min/max/avg/latest/yoyChangePct |
+
+The agent uses `get_facet_values` to discover Wyoming's duoarea code before
+filtering the natural-gas routes — illustrating the wrapper's
+"self-describing API" design: the agent learns the schema on demand, it
+isn't hard-coded.
+
+## Install (opt-in)
+
+These dependencies are **not** in the repo's `package.json`; install
+opt-in:
+
+```bash
+bun add @mastra/core @ai-sdk/openai-compatible zod
+```
+
+Add your OpenRouter key to `.env`:
+
+```bash
+echo 'OPENROUTER_API_KEY=sk-or-...' >> .env
+```
+
+## The agent
+
+```ts
+import { Agent } from '@mastra/core/agent'
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible'
+import { z } from 'zod'
+
+const openrouter = createOpenAICompatible({
+  name: 'openrouter',
+  apiKey: process.env.OPENROUTER_API_KEY,
+  baseURL: 'https://openrouter.ai/api/v1',
+})
+
+const agent = new Agent({
+  name: 'Wyoming-Natural-Gas-Analyst',
+  instructions: `
+    You are an energy analyst. Produce a brief insight report on natural gas
+    in Wyoming. Use the natural-gas domain and the cons/sum, pri/sum, and
+    prod/oilwells sub-routes. To filter by state, call get_facet_values on
+    one route to discover the duoarea code whose name contains "Wyoming"
+    (it is "SWY" in the upstream natural-gas v2 taxonomy, but verify).
+    Then run query_with_summary against each route with annual frequency
+    over the last 5 years — it injects data:["value"] automatically and
+    returns per-series min/max/avg/latest/yoyChangePct so you can write a
+    concrete, numerical report without re-parsing raw rows.
+  `,
+  model: openrouter('anthropic/claude-3.5-sonnet'),
+  tools: { /* search_datasets, list_domains, get_domain, list_facets, get_facet_values, query_eia, query_with_summary */ },
+})
+
+const result = await agent.generate(
+  'Give me a brief insight report on natural gas in Wyoming over the last 5 years.'
+)
+console.log(result.text)
+```
+
+## Why this pattern works
+
+- **The system prompt is short.** The `/guide` endpoint carries the heavy
+  metadata (workflow, decision tree, anti-patterns, recipes); you only
+  need a brief role + goal description in the agent itself.
+- **The agent is forced to discover.** It can't hardcode Wyoming's
+  `SWY` code — it has to call `get_facet_values` to learn it. That makes
+  the agent portable to other states without code changes.
+- **`query_with_summary` is the workhorse.** Raw `query_eia` is useful for
+  debugging, but most queries should go through the summary tool — it
+  returns min/max/avg/latest/yoyChangePct per series, so the LLM doesn't
+  have to do arithmetic.
+
+## Adapt to other domains
+
+Swap the `instructions` and tool list — the pattern generalizes:
+
+- Coal: `consumption-and-quality`, `aggregate-production`, `price-by-rank`
+- Electricity: `electric-power-operational-data`, `retail-sales`
+- Natural Gas: `pri/sum`, `cons/sum`, `prod/oilwells`, `stor/wkly`
+
+The five-step loop (search → inspect → list facets → resolve values →
+query) is the same for every domain.
+
+## Reference
+
+- [`examples/agents/05-mastra-wyoming-natural-gas.ts`](https://github.com/MaxwellCalkin/eia-api-ts/blob/main/examples/agents/05-mastra-wyoming-natural-gas.ts)
+- [`examples/agents/01-discover-and-query.ts`](https://github.com/MaxwellCalkin/eia-api-ts/blob/main/examples/agents/01-discover-and-query.ts)
+  — the same loop without the LLM

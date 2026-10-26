@@ -1,0 +1,84 @@
+---
+title: Architecture
+description: How the pieces fit together.
+---
+
+The wrapper is a single Elysia server. The code is organised so the same
+metadata drives routes, the OpenAPI spec, the agent guide, the search index,
+and the ontology.
+
+```
+src/
+├── schemas/     TypeBox schemas (single source of truth)
+├── lib/         EIA client, cache, errors, search, rate limiter
+├── domains/     Typed metadata for all 15 domains (+ _sub.ts helper)
+├── ontology/    Classes, relations, domain mappings, JSON-LD/Turtle
+├── routes/      Elysia route modules (HTTP + /mcp)
+├── mcp/         MCP server (tools, resources, transport)
+├── config/      Env loading
+├── openapi.ts   OpenAPI plugin config
+└── index.ts     Server entry
+```
+
+## Data flow
+
+```
+   client                 eia-api-ts                    EIA API v2
+     │                         │                            │
+     │  POST /query            │                            │
+     ├────────────────────────►│                            │
+     │                         │  /v2/{domain}/{route}/data │
+     │                         ├───────────────────────────►│
+     │                         │  (rate-limited, cached)    │
+     │                         │◄───────────────────────────┤
+     │   { response: {...} }   │                            │
+     │◄────────────────────────┤                            │
+```
+
+1. Client sends a request (any of the 25+ HTTP endpoints, or an MCP tool call).
+2. Server validates the request body against the TypeBox schema and looks up
+   the upstream path from the local `DomainMeta`.
+3. The request is queued behind the rate limiter, deduplicated by cache key,
+   and proxied to `api.eia.gov`.
+4. Response is cached (5 min for data, 1 h for routes, 24 h for facets) and
+   returned to the client.
+
+## Key design choices
+
+### Schemas are the source of truth
+
+Every route, every MCP tool, every OpenAPI definition pulls from the same
+TypeBox schema in `src/schemas/`. Change the schema, change the world:
+
+- Route validation (compile-time + runtime)
+- OpenAPI spec (auto-generated)
+- Eden Treaty client types (auto-inferred)
+- MCP tool input shapes (auto-inferred)
+
+### One query shape
+
+Instead of mirroring EIA's 100+ route tree, the wrapper exposes a single
+`POST /query` that accepts `{ domain, route, frequency, start, end, ... }`.
+This means clients learn one shape, not 100.
+
+### Self-describing
+
+Every endpoint that the wrapper exposes (`/domains`, `/routes/*`, `/search`,
+`/guide`, `/ontology`) is designed to be **discoverable by an agent at
+runtime** — no hard-coded knowledge of the EIA surface required.
+
+### Server-side key
+
+The EIA API key lives in the server's env, never the client's. Clients talk
+to `localhost:3000` (or your public proxy) and the key is injected by the
+server on the way out.
+
+## Adding a new domain
+
+See [Adding a domain](/contribute/adding-a-domain/) for a step-by-step
+walkthrough. Short version:
+
+1. Drop a new `src/domains/my-domain.ts` exporting a `DomainMeta`.
+2. Register it in `src/domains/index.ts`.
+3. Done — it's reachable via `POST /query`, listed in `/domains`, indexed by
+   `/search`, documented in OpenAPI, and appears in `/guide`.

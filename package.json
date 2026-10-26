@@ -1,0 +1,47 @@
+{
+  "name": "eia-api-ts",
+  "version": "0.1.0",
+  "description": "Modern, fully-typed wrapper around the EIA APIv2 for agentic use. Built with Bun, Elysia, and OpenAPI.",
+  "type": "module",
+  "main": "src/index.ts",
+  "module": "src/index.ts",
+  "scripts": {
+    "dev": "bun run --hot src/index.ts",
+    "start": "bun run src/index.ts",
+    "build": "bun build src/index.ts --target=bun --outdir=dist",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "dump-openapi": "bun run scripts/dump-openapi.ts"
+  },
+  "keywords": [
+    "eia",
+    "energy",
+    "api",
+    "openapi",
+    "elysia",
+    "bun",
+    "agent",
+    "sdk"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@elysiajs/cors": "^1.1.0",
+    "@elysiajs/openapi": "^1.1.0",
+    "@modelcontextprotocol/server": "^2.3.1",
+    "elysia": "^1.1.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@ai-sdk/openai-compatible": "^2.0.50",
+    "@elysiajs/eden": "^1.4.9",
+    "@mastra/core": "^1.42.0",
+    "@mastra/mcp": "^1.13.1",
+    "@modelcontextprotocol/client": "^2.3.1",
+    "@sinclair/typebox": "^0.34.49",
+    "@types/bun": "latest",
+    "typescript": "^5.6.0"
+  },
+  "engines": {
+    "bun": ">=1.1.0"
+  }
+}

@@ -1,0 +1,108 @@
+---
+title: Schemas
+description: Request and response types.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The wrapper exposes a small, well-typed surface. The TypeBox definitions in
+`src/schemas/` are the source of truth — they generate the OpenAPI spec,
+Elysia route validators, and Eden Treaty client types automatically.
+
+## DataParams (POST /query body)
+
+```ts
+export const DataParamsSchema = t.Object({
+  data: t.Optional(t.Array(t.String(), { description: 'Data columns to return.' })),
+  facets: t.Optional(
+    t.Record(t.String(), t.Array(t.String()), {
+      description: 'Facet filters as `{ facetId: [values...] }`.',
+    })
+  ),
+  frequency: t.Optional(t.String()),
+  start: t.Optional(t.String()),
+  end: t.Optional(t.String()),
+  sort: t.Optional(t.Array(SortSchema)),
+  length: t.Optional(t.Integer({ minimum: 0, maximum: 5000 })),
+  offset: t.Optional(t.Integer({ minimum: 0 })),
+})
+
+export const DataParamsQuerySchema = t.Composite([
+  DataParamsSchema,
+  t.Object({
+    domain: DomainIdSchema,
+    route: RoutePathSchema,
+  }),
+])
+```
+
+### Field reference
+
+| Field | Type | Constraints | Default | Purpose |
+|---|---|---|---|---|
+| `domain` | string | one of 15 registered ids | — | EIA domain |
+| `route` | string | sub-route id (varies per domain) | — | Sub-route within the domain |
+| `frequency` | string | route-specific | upstream default | `annual` \| `monthly` \| `weekly` \| `daily` \| `hourly` |
+| `start` | string | `YYYY` or `YYYY-MM` | upstream default | inclusive lower bound on `period` |
+| `end` | string | same as `start` | upstream default | inclusive upper bound |
+| `data` | string[] | column names | all columns | which columns to return |
+| `facets` | `Record<string, string[]>` | — | no filter | facet filters |
+| `sort` | `{ column, direction }[]` | `direction ∈ {asc, desc}` | upstream default | sort orders |
+| `length` | integer | `0 ≤ length ≤ 5000` | upstream default | row cap |
+| `offset` | integer | `≥ 0` | `0` | pagination offset |
+
+## DataResponse envelope
+
+```ts
+export const DataResponseSchema = t.Object({
+  data: t.Any({ description: 'Free-form array of data rows.' }),
+  dateFormat: t.Optional(t.String()),
+  description: t.Optional(t.String()),
+  frequency: t.Optional(t.String()),
+  total: t.Optional(t.Integer()),
+})
+
+export const DataResponseContainerSchema = t.Object({
+  apiVersion: t.Optional(t.String()),
+  ExcelAddInVersion: t.Optional(t.String()),
+  warnings: t.Optional(t.Array(t.Any())),
+  request: t.Optional(RouteRequestSchema),
+  response: DataResponseSchema,
+})
+```
+
+`response.data` is intentionally typed as `any` because the row shape varies
+between routes. The wrapper mirrors EIA's response exactly so existing EIA
+clients can drop in. See the [per-domain docs](/domains/) for the row shape
+of each route, or call `GET /schema/:domain/:route` for the live shape.
+
+## Sort
+
+```ts
+export const SortSchema = t.Object({
+  column: t.String(),
+  direction: t.Union([t.Literal('asc'), t.Literal('desc')]),
+})
+```
+
+## Pagination
+
+```ts
+export const PaginationSchema = t.Object({
+  length: t.Integer({ minimum: 0, maximum: 5000 }),
+  offset: t.Integer({ minimum: 0 }),
+})
+```
+
+## Error shapes
+
+| HTTP | Body | When |
+|---|---|---|
+| `400` | `{ error: "validation_error", message: string, available?: string[] }` | Unknown domain / route |
+| `422` | Elysia validation error | Body shape invalid |
+| `502` | `{ error: "upstream_error", message: string, upstreamStatus: number }` | Upstream EIA failed |
+| `404` | `{ error: "not_found", message: string }` | Domain / route not in registry |
+| `401` | (from upstream) | Bad `EIA_API_KEY` |
+
+See [Error handling](/guides/error-handling/) for retry and recovery
+patterns.

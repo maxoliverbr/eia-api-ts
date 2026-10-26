@@ -1,0 +1,108 @@
+---
+title: Ontology-first
+description: Start from the ontology, then query — works with or without an LLM.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The energy ontology is the wrapper's most powerful abstraction. It lets an
+agent reason about *what* to query without prior energy knowledge: given a
+concept like "Coal emits CO₂", the ontology tells you which EIA domains and
+routes to call.
+
+<Aside type="tip">
+  This pattern works **with or without an LLM**. With an LLM, the ontology
+  scaffolds reasoning. Without, you walk it deterministically with `fetch`.
+</Aside>
+
+## The loop
+
+```
+1. ontology/relations           → "What does Coal emit?" → CO2Emissions
+2. ontology/relations/{id}/evidence → "Which EIA routes carry CO2 emissions?"
+3. POST /query                  → Real data
+```
+
+## Example 1: with a Mastra agent
+
+[`examples/agents/06-mastra-ontology-electricity-carbon.ts`](https://github.com/MaxwellCalkin/eia-api-ts/blob/main/examples/agents/06-mastra-ontology-electricity-carbon.ts)
+builds a US electricity carbon-fingerprint report by starting from the
+ontology. No hardcoded domain knowledge — the agent asks the ontology which
+classes and relations matter, then maps them to EIA domains.
+
+The agent has 6 ontology-aware tools:
+
+| Tool | Wraps |
+|---|---|
+| `browse_relations` | `GET /ontology/relations?subject=&predicate=&object=` |
+| `get_class_detail` | `GET /ontology/classes/:classId` |
+| `get_domain_mapping` | `GET /ontology/domains/:domainId` |
+| `get_relation_evidence` | `GET /ontology/relations/:relationId/evidence` |
+| `search_ontology` | `GET /ontology/search?q=` |
+| `query_eia` | `POST /query` |
+| `query_with_summary` | `POST /query` + summarise |
+
+The system prompt is short — the agent discovers the structure:
+
+```ts
+const agent = new Agent({
+  name: 'us-electricity-carbon-analyst',
+  instructions: `
+    You are an energy analyst. Produce a brief carbon-footprint report for
+    the US electricity sector. Start from the ontology (browse_relations,
+    get_class_detail, get_relation_evidence) to find which EIA domains and
+    routes carry CO2 emissions data, then use query_with_summary to fetch
+    the actual numbers. Present them as a written report.
+  `,
+  model: openrouter('anthropic/claude-3.5-sonnet'),
+  tools: { /* 7 ontology-aware tools */ },
+})
+```
+
+## Example 2: without an LLM
+
+[`examples/agents/07-ontology-consumption-prediction.ts`](https://github.com/MaxwellCalkin/eia-api-ts/blob/main/examples/agents/07-ontology-consumption-prediction.ts)
+is a plain-fetch walkthrough of the same pattern. No LLM, no extra
+dependencies. The script walks the ontology deterministically and ends with
+a single `POST /query`.
+
+```ts
+// 1. Ontology says Coal emits CO2
+const relations = await fetch(
+  'http://localhost:3000/ontology/relations?subject=Coal&predicate=emits'
+).then(r => r.json())
+
+// 2. Evidence maps to a concrete EIA route + facet binding
+const evidence = await fetch(
+  `http://localhost:3000/ontology/relations/${relations.relations[0].id}/evidence`
+).then(r => r.json())
+
+// 3. Run the data query from the binding
+const query = evidence.evidence[0].commonQueries[0]
+const result = await fetch('http://localhost:3000/query', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(query.params),
+}).then(r => r.json())
+```
+
+## Why this pattern is the most powerful
+
+- **No prior energy knowledge required.** The ontology encodes the
+  relationships; the agent walks it.
+- **No hallucinated facet ids.** Facet values come from
+  `get_relation_evidence`, which carries the verified binding.
+- **Works for projections too.** The `forecastedBy` relation links
+  EnergySource / Sector classes to AEO / STEO / IEO — agents can reason
+  about which outlook to use.
+- **Generalizes.** Same loop works for emissions, consumption, reserves,
+  prices, capacity.
+
+## Reference
+
+- [`examples/agents/06-mastra-ontology-electricity-carbon.ts`](https://github.com/MaxwellCalkin/eia-api-ts/blob/main/examples/agents/06-mastra-ontology-electricity-carbon.ts)
+  — LLM-driven ontology walkthrough
+- [`examples/agents/07-ontology-consumption-prediction.ts`](https://github.com/MaxwellCalkin/eia-api-ts/blob/main/examples/agents/07-ontology-consumption-prediction.ts)
+  — plain-fetch ontology walkthrough
+- [Energy ontology concept](/concepts/ontology/) — ontology endpoints and
+  relations

@@ -1,0 +1,120 @@
+---
+title: Facets
+description: How filtering works — and the gotchas that bite.
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+A **facet** is a column you can filter on. Every EIA route has a small,
+discoverable list of facets (typically 2–8): geographic regions, fuel types,
+sectors, time granularity, etc. Use them to narrow down a query from "all of
+US coal production, ever" to "Wyoming coal production in 2020".
+
+## The flow
+
+There are three endpoints for working with facets, in this order:
+
+<Steps>
+
+1. **List the facets** for a route:
+
+   ```bash
+   curl http://localhost:3000/routes/coal/aggregate-production/facet
+   # { "response": { "totalFacetOptions": 3,
+   #   "facetOptions": ["stateRegionId", "coalRankId", "mineTypeId"] } }
+   ```
+
+2. **Get the values** for one facet:
+
+   ```bash
+   curl http://localhost:3000/routes/coal/aggregate-production/facet/stateRegionId
+   # { "response": { "totalFacets": 51,
+   #   "facets": [{ "id": "AK", "name": "Alaska" }, { "id": "WY", "name": "Wyoming" }] } }
+   ```
+
+3. **Use one or more values** in a query:
+
+   ```bash
+   curl -X POST http://localhost:3000/query \
+     -H 'Content-Type: application/json' \
+     -d '{
+       "domain": "coal",
+       "route": "aggregate-production",
+       "frequency": "annual",
+       "facets": { "stateRegionId": ["WY"] },
+       "start": "2020",
+       "end": "2024"
+     }'
+   ```
+
+</Steps>
+
+## Gotchas
+
+<Aside type="caution">
+  EIA's facet IDs are **case-sensitive** in the upstream API and the wrapper
+  passes them through unchanged. `stateId` ≠ `stateID` ≠ `stateid`.
+</Aside>
+
+A few specifics worth knowing up-front:
+
+| Facet | Casing | Notes |
+|---|---|---|
+| `stateRegionId` (Coal) | camelCase | `WY`, `MT`, etc. |
+| `stateId` (SEDS) | camelCase | |
+| `stateID` (State Electricity Profiles summary) | ID all-caps | Different from `stateId`! |
+| `stateid` (State Electricity Profiles non-summary) | all lowercase | |
+| `sectorId` (CO2 Emissions) | camelCase | `EC` for electric power, etc. |
+| `fueltypeid` (Electricity) | all lowercase | `NG`, `WND`, `SUN`, ... |
+| `duoarea` (Natural Gas) | all lowercase | Two-letter region codes |
+
+When in doubt, always do step 2 (`/routes/{domain}/{route}/facet/{id}`) to
+confirm both the facet id spelling **and** the value id spelling — both are
+case-sensitive.
+
+## Multiple values
+
+Each facet filter accepts an **array** of values; rows matching **any** of
+the values are returned (logical OR within a facet, AND across facets):
+
+```json
+{
+  "facets": {
+    "fueltypeid": ["NG", "WND"],
+    "location": ["CA", "TX"]
+  }
+}
+```
+
+This returns rows where fuel is **either** NG or WND **and** the location is
+**either** CA or TX — `(fuel IN (NG,WND)) AND (location IN (CA,TX))`.
+
+## Discovering facets programmatically
+
+For agents that don't have prior knowledge of the EIA surface, the canonical
+loop is:
+
+```ts
+const domain = await fetch('/domains/electricity').then(r => r.json())
+const route = domain.subRoutes.find(s => s.id === 'electric-power-operational-data')
+const facets = await fetch(`/routes/electricity/${route.id}/facet`).then(r => r.json())
+const fuelValues = await fetch(
+  `/routes/electricity/${route.id}/facet/${facets.response.facetOptions[0]}`
+).then(r => r.json())
+```
+
+See the [Multi-step agent](/guides/multi-step-agent/) guide for the full
+agent loop including error recovery.
+
+## When facets aren't enough
+
+For datasets without facet filters (e.g. some flat `data` tables), you may
+need to filter in-process after the query returns:
+
+```ts
+const result = await fetch('/query', { /* ... */ }).then(r => r.json())
+const filtered = result.response.data.filter(row => row.value > 1000)
+```
+
+This is fine — `length` caps the upstream response at 5000 rows; if you need
+more, paginate or aggregate upstream.

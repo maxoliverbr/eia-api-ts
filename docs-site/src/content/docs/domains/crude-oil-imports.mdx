@@ -1,0 +1,58 @@
+---
+title: Crude Oil Imports
+description: U.S. crude oil imports by country of origin, grade, and customs district.
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+**Tags**: `oil`, `imports`, `trade`, `us`
+
+**Use cases**: analyze U.S. crude import dependency by country; track grade
+mix of imported crude; monitor customs district throughput.
+
+## Sub-routes (1)
+
+| Sub-route | Summary | Typical frequency | Date range |
+|---|---|---|---|
+| `data` | U.S. crude oil imports (all records) | monthly | 1981 → |
+
+Flat domain — one route, full dataset.
+
+## Facets
+
+| Facet id | Casing | Example values |
+|---|---|---|
+| `origin` | lowercase | `"CANADA"`, `"MEXICO"`, `"SAUDI ARABIA"` |
+| `grade` | lowercase | `"LGT"`, `"MED"`, `"HVY"` |
+| `customsDistrict` | lowercase | `"HOUSTON"`, `"LOS ANGELES"` |
+
+<Aside type="note">
+  Facets live at `/routes/crude-oil-imports/facet/{id}` — **not** under the
+  `/data` path, because there is only one route.
+</Aside>
+
+## Worked example
+
+```bash
+curl -X POST http://localhost:3000/query \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "domain": "crude-oil-imports",
+    "route": "data",
+    "frequency": "monthly",
+    "start": "2023-01",
+    "end": "2023-12",
+    "length": 5
+  }'
+```
+
+## Agent guidance
+
+- Monthly cadence is the default; use `frequency=monthly`.
+- For trade-flow analysis, narrow by `origin` (country) and `grade` to get
+  country-specific grade mix.
+
+## Related domains
+
+- [International](/domains/international/) — global flows
+- [Total Energy](/domains/total-energy/) — national aggregate

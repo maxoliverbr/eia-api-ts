@@ -1,0 +1,126 @@
+---
+title: Agent guide
+description: The /guide endpoint as a one-shot system prompt.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The fastest way for an agent to learn the API is to fetch the guide **once**
+and use it as a system-prompt / tool-selection reference.
+
+```bash
+curl http://localhost:3000/guide
+```
+
+This single endpoint returns everything the wrapper knows about itself:
+
+- **`summary`** + **`philosophy[]`** — the high-level rules
+- **`workflow.steps[]`** — the canonical 5-step flow
+- **`decisionTree[]`** — common intents → route sequences
+- **`antiPatterns[]`** — what **not** to do
+- **`commonRecipes[]`** — copy-pasteable call templates
+- **`domains[]`** — per-domain summary (playbook, commonQueries, agentHints, taskToRoute)
+- **`endpoints`** — the canonical URL map
+
+## Per-domain slice
+
+For a single domain:
+
+```bash
+curl http://localhost:3000/guide/coal
+# → { playbook, commonQueries, agentHints, taskToRoute, subRoutes[] }
+```
+
+Each `subRoutes[]` entry carries `agentGuidance` (free-form prose: when to
+use, when not to, alternatives) and `columnDescriptions` (column name →
+human description) so an agent can interpret raw query results without
+external documentation.
+
+## Using it as a system prompt
+
+```ts
+const guide = await fetch('http://localhost:3000/guide').then(r => r.text())
+
+const agent = new Agent({
+  name: 'eia-analyst',
+  instructions: `
+    ${guide}
+
+    You are an energy analyst. Use the guide's workflow and recipes to answer
+    questions. When you identify the right domain and route, use POST /query
+    with the documented facets and a sensible date range.
+  `,
+  model: openrouter('anthropic/claude-3.5-sonnet'),
+  tools: { /* search_datasets, list_domains, get_domain, list_facets, get_facet_values, query_eia */ },
+})
+
+const result = await agent.generate('Give me California natural gas prices for 2020–2024.')
+```
+
+## What's in the guide
+
+### workflow.steps
+
+The canonical sequence an agent should follow:
+
+1. **Search** — `POST /search` with a free-text query
+2. **Inspect** — `GET /domains/:id` for the matched domain
+3. **List facets** — `GET /routes/:domain/:route/facet`
+4. **Resolve values** — `GET /routes/:domain/:route/facet/:facetId`
+5. **Query** — `POST /query` with chosen facets
+
+### antiPatterns
+
+Common mistakes to avoid:
+
+- Calling `/query` without first discovering the route's facets (results in
+  too-broad queries or 422s on case-mismatched facet IDs)
+- Using `{year}` as a literal AEO/IEO route id (it's a placeholder; call
+  `GET /routes/aeo` first to discover real years)
+- Exposing the EIA API key in the client (it should stay server-side)
+- Hard-coding facet values like `"California"` — always look up the id
+  (`"CA"`) first
+- Setting `length > 5000` (the wrapper rejects it)
+
+### taskToRoute
+
+A flat intent-dispatch table the agent can scan when it has identified a
+domain but not a sub-route:
+
+```json
+{
+  "state coal production": "aggregate-production",
+  "domestic coal shipments": "shipments/by-mine-by-plant",
+  "coal exports": "exports-imports-quantity-price"
+}
+```
+
+### commonRecipes
+
+Pre-built call templates:
+
+```json
+{
+  "name": "State-level electricity generation",
+  "domain": "electricity",
+  "route": "electric-power-operational-data",
+  "frequency": "monthly",
+  "facets": { "fueltypeid": ["NG"] }
+}
+```
+
+An agent can read these directly and adapt the date range and `length`
+without reasoning about the query shape from scratch.
+
+## Caching
+
+`/guide` and `/guide/:domain` are cached for **1 hour** on the server side.
+You can fetch them once at agent startup and not worry about the rate
+limiter.
+
+## Reference
+
+- [`examples/agents/00-read-the-guide.ts`](https://github.com/MaxwellCalkin/eia-api-ts/blob/main/examples/agents/00-read-the-guide.ts)
+  — complete walkthrough
+- [`src/routes/guide.ts`](https://github.com/MaxwellCalkin/eia-api-ts/blob/main/src/routes/guide.ts)
+  — server implementation

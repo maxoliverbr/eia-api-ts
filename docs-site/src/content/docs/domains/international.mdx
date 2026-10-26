@@ -1,0 +1,47 @@
+---
+title: International
+description: International energy data by country and region.
+---
+
+**Tags**: `international`, `global`, `country`, `production`, `consumption`
+
+**Use cases**: compare energy production across countries; track global
+consumption of major fuels; analyze reserves by region.
+
+## Sub-routes (1)
+
+| Sub-route | Summary | Typical frequency | Date range |
+|---|---|---|---|
+| `data` | International energy data (all records) | annual | 1980 → |
+
+Flat domain — one route, full dataset.
+
+## Facets
+
+| Facet id | Casing | Example values |
+|---|---|---|
+| `countryRegionId` | camelCase | `"USA"`, `"CHN"`, `"IND"`, `"RUS"`, `"SAU"` |
+| `activityId` | camelCase | `"production"`, `"consumption"`, `"imports"`, `"exports"` |
+| `productId` | camelCase | `"natural-gas"`, `"crude-oil"`, `"coal"`, `"electricity"` |
+| `unit` | lowercase | `"m3"`, `"bbl"`, `"t"`, `"TJ"` |
+
+## Worked example
+
+```bash
+curl -X POST http://localhost:3000/query \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "domain": "international",
+    "route": "data",
+    "frequency": "annual",
+    "start": "2020",
+    "end": "2022",
+    "facets": { "countryRegionId": ["CHN"] },
+    "length": 3
+  }'
+```
+
+## Related domains
+
+- [IEO](/domains/ieo/) — long-term international projections
+- [Total Energy](/domains/total-energy/) — U.S. national aggregate

@@ -1,0 +1,142 @@
+---
+title: Discovery
+description: Self-describing endpoints — /domains, /routes/*, /search.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The wrapper is **self-describing**: it carries enough metadata about itself
+that an agent can learn the API at runtime — no hard-coded knowledge of the
+EIA surface required. There are three discovery surfaces:
+
+| Endpoint | Returns |
+|---|---|
+| `GET /domains` | All 15 domains with rich metadata |
+| `GET /domains/:id` | One domain + sub-routes + example queries |
+| `GET /routes/:domain` | Route tree for a domain (proxied) |
+| `GET /routes/:domain/*` | Leaf metadata (frequencies, facets, columns) |
+| `GET /routes/:domain/*/facet` | List facet IDs |
+| `GET /routes/:domain/*/facet/:id` | Possible values for one facet |
+| `GET /schema/:domain/*` | Alias for leaf metadata |
+| `POST /search` | Free-text search across all metadata |
+
+## The discovery loop
+
+A typical agent loop looks like this:
+
+```ts
+// 1. Find datasets that match a free-text intent
+const search = await fetch('/search', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ q: 'natural gas price' }),
+}).then(r => r.json())
+
+// 2. Inspect the top hit's domain
+const top = search.hits[0]
+const domain = await fetch(`/domains/${top.domain}`).then(r => r.json())
+
+// 3. Pick a sub-route
+const route = domain.subRoutes.find(s => s.id === top.subRouteId)
+
+// 4. Discover its facets
+const facets = await fetch(`/routes/${top.domain}/${route.id}/facet`).then(r => r.json())
+
+// 5. Pick a facet value
+const fuelValues = await fetch(
+  `/routes/${top.domain}/${route.id}/facet/${facets.response.facetOptions[0]}`
+).then(r => r.json())
+
+// 6. Run the query
+const data = await fetch('/query', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    domain: top.domain,
+    route: route.id,
+    frequency: route.typicalFrequency,
+    start: route.exampleQuery.start,
+    end: route.exampleQuery.end,
+    facets: { [facets.response.facetOptions[0]]: fuelValues.response.facets.slice(0, 2).map(f => f.id) },
+    length: 5,
+  }),
+}).then(r => r.json())
+```
+
+## /search
+
+`POST /search` accepts a free-text query and returns ranked matches across
+domain and sub-route metadata:
+
+```bash
+curl -X POST http://localhost:3000/search \
+  -H 'Content-Type: application/json' \
+  -d '{"q": "coal production", "limit": 3}'
+```
+
+```json
+{
+  "query": "coal production",
+  "total": 5,
+  "hits": [
+    {
+      "domain": "coal",
+      "subRouteId": "aggregate-production",
+      "path": "coal/aggregate-production",
+      "title": "Coal → Aggregate U.S. coal production",
+      "snippet": "…coal production totals…",
+      "score": 14.2
+    }
+  ]
+}
+```
+
+<Aside type="tip">
+  The score is a relevance signal; sort by `score desc` to get the best
+  matches first.
+</Aside>
+
+## Domain metadata fields
+
+Every domain and sub-route carries rich metadata designed for agents:
+
+| Field | Type | Purpose |
+|---|---|---|
+| `name`, `description` | string | Human-readable |
+| `tags` | string[] | Free-form labels |
+| `useCases` | string[] | "What you can do with this" |
+| `exampleQuery` | object | A safe, runnable default query |
+| `typicalFrequency` | string | Most common `frequency` value |
+| `dateRange` | `{ start, end }` | What time periods are available |
+| `facetsHint` | string[] | Likely facet IDs to filter on |
+| `playbook` | string | Free-form agent guidance |
+| `commonQueries` | object[] | A library of runnable queries |
+| `agentHints.warnings` | string[] | Things to watch out for |
+| `agentHints.gotchas` | string[] | Non-obvious behavior |
+| `taskToRoute` | object | Intent-dispatch table |
+| `agentGuidance` | string | Per-sub-route agent prose |
+| `columnDescriptions` | object | Column name → human description |
+
+Fetch the **whole thing** at once via the [Agent guide](/concepts/guide/):
+
+```bash
+curl http://localhost:3000/guide
+```
+
+## Synthesized routes
+
+A few domains (`rto`, `state-electricity-profiles`, `aeo`, `ieo`) don't have
+an upstream listing at `/v2/{domain}` — the wrapper synthesizes the route
+list from local metadata. The response carries a `__synthesized: true` flag
+in that case.
+
+## Caching
+
+Discovery responses are cached aggressively:
+
+- **Route listings**: 1 hour TTL
+- **Facets and values**: 24 hour TTL
+- **Data responses**: 5 minute TTL
+
+You can hit these endpoints as often as you like without burning your EIA
+rate-limit budget.

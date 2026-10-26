@@ -1,0 +1,95 @@
+---
+title: Installation
+description: Get eia-api-ts running on your machine.
+---
+
+import { Aside, Steps, Tabs, TabItem } from '@astrojs/starlight/components';
+
+## Prerequisites
+
+- **[Bun](https://bun.sh)** ≥ 1.1 — runtime and package manager
+- **An EIA API key** — free at [eia.gov/opendata/register.php](https://www.eia.gov/opendata/register.php)
+- **~50 MB** of disk space for `node_modules/`
+
+<Aside type="tip">
+  The EIA API key is held **server-side** only — clients never see it. You can
+  use a [DEMO_KEY](https://www.eia.gov/opendata/) for light experimentation,
+  but it has very low rate limits. Sign up for a free key for real usage.
+</Aside>
+
+## Steps
+
+<Steps>
+
+1. **Clone and install**
+
+   ```bash
+   git clone https://github.com/MaxwellCalkin/eia-api-ts.git
+   cd eia-api-ts
+   bun install
+   ```
+
+2. **Configure your environment**
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   Edit `.env` and set your real key:
+
+   ```ini
+   EIA_API_KEY=your_real_key_here
+   PORT=3000
+   ```
+
+3. **Start the server**
+
+   <Tabs syncKey="pm">
+     <TabItem label="bun" icon="bun">
+       ```bash
+       bun dev
+       ```
+     </TabItem>
+     <TabItem label="bun (production)" icon="seti:shell">
+       ```bash
+       bun start
+       ```
+     </TabItem>
+   </Tabs>
+
+   You should see:
+
+   ```
+   🦊 Elysia is running at http://localhost:3000
+   📘 OpenAPI docs: http://localhost:3000/openapi
+   ```
+
+4. **Verify it works**
+
+   ```bash
+   curl http://localhost:3000/health
+   # { "status": "ok", "upstream": "ok", "timestamp": "..." }
+   ```
+
+5. **Run your first query**
+
+   ```bash
+   curl -X POST http://localhost:3000/query \
+     -H 'Content-Type: application/json' \
+     -d '{
+       "domain": "coal",
+       "route": "aggregate-production",
+       "frequency": "annual",
+       "start": "2020",
+       "end": "2024",
+       "length": 5
+     }'
+   ```
+
+</Steps>
+
+## Next
+
+- [Quick start](/start/quick-start/) — a 5-minute end-to-end tour
+- [Configuration](/start/configuration/) — every env var, every default
+- [Architecture](/start/architecture/) — how the pieces fit together

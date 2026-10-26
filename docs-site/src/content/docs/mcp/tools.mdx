@@ -1,0 +1,124 @@
+---
+title: MCP Tools
+description: The 9 tools exposed by /mcp.
+---
+
+All 9 tools mirror the canonical reference at
+[`examples/agents/06-mastra-ontology-electricity-carbon.ts`](https://github.com/MaxwellCalkin/eia-api-ts/blob/main/examples/agents/06-mastra-ontology-electricity-carbon.ts).
+
+## 1. `browse_relations`
+
+Browse relations in the EIA energy ontology. Filter by subject, predicate,
+or object class id.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `subject` | string | no | Filter by subject class id, e.g. `"Coal"` |
+| `predicate` | enum | no | One of: `produces`, `consumes`, `imports`, `exports`, `stores`, `transmits`, `locatedIn`, `measuredBy`, `measuredAt`, `forecastedBy`, `emits` |
+| `object` | string | no | Filter by object class id, e.g. `"CO2Emissions"` |
+
+Returns matching RDF-style triples with `evidenceDomains`.
+
+## 2. `get_class_detail`
+
+Get full detail for an ontology class.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `classId` | string | yes | PascalCase class id, e.g. `"Coal"`, `"NaturalGas"`, `"CO2Emissions"` |
+
+Returns: description, `sameAs` URIs, sub-classes, all relations where the
+class appears as subject or object.
+
+## 3. `get_domain_mapping`
+
+Get the ontology mapping for a single EIA domain.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `domainId` | string | yes | One of the 15 EIA domain ids, e.g. `"coal"`, `"electricity"` |
+
+Returns: which ontology classes the domain instantiates, which relations
+apply, and the routes that carry the data.
+
+## 4. `get_relation_evidence`
+
+Get evidence for a relation: domain mappings, common queries, and facet
+codes.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `relationId` | string | yes | Relation id, e.g. `"coal-emits-co2"` |
+
+Returns an array of `evidence` items, each with `commonQueries` (runnable
+`POST /query` params) and `facetBindings`.
+
+## 5. `search_ontology`
+
+Keyword search across classes and relations.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `q` | string | yes | Search query, e.g. `"carbon emissions"` |
+
+Returns ranked hits with type, id, and score.
+
+## 6. `list_facets`
+
+List facet IDs available for a route.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `domain` | string | yes | EIA domain id |
+| `route` | string | yes | Sub-route id (e.g. `"pri/sum"`) |
+
+## 7. `get_facet_values`
+
+Possible values for one facet.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `domain` | string | yes | EIA domain id |
+| `route` | string | yes | Sub-route id |
+| `facetId` | string | yes | Facet id, e.g. `"duoarea"`, `"fueltypeid"` |
+
+Returns an array of `{ id, name }` pairs. **Always call this before
+filtering** — facet values are case-sensitive ids.
+
+## 8. `query_eia`
+
+Raw `POST /query` — for debugging or when you need full control over the
+response shape.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `domain` | string | yes | EIA domain id |
+| `route` | string | yes | Sub-route id |
+| `frequency` | string | no | `annual` \| `monthly` \| `weekly` \| `daily` |
+| `start` | string | no | Inclusive lower bound on `period` |
+| `end` | string | no | Inclusive upper bound |
+| `data` | string[] | no | Columns to return |
+| `facets` | object | no | `{ facetId: [values] }` |
+| `sort` | object[] | no | Sort orders |
+| `length` | integer | no | Row cap (max 5000) |
+| `offset` | integer | no | Pagination offset |
+
+## 9. `query_with_summary`
+
+The primary data tool. Injects `data:["value"]`, groups by series, and
+returns min/max/avg/latest/yoyChangePct per series.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `domain` | string | yes | EIA domain id |
+| `route` | string | yes | Sub-route id |
+| `frequency` | string | yes | Always pass this; the summary tool can't pick a default |
+| `start` | string | yes | Start period |
+| `end` | string | yes | End period |
+| `facets` | object | no | `{ facetId: [values] }` |
+| `groupBy` | string[] | no | Additional columns to group by |
+
+## Reference
+
+- [`src/mcp/tools.ts`](https://github.com/MaxwellCalkin/eia-api-ts/blob/main/src/mcp/tools.ts)
+  — implementation

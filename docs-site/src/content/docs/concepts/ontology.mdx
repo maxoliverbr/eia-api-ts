@@ -1,0 +1,119 @@
+---
+title: Energy ontology
+description: RDF-style knowledge graph bridging concepts to EIA domains.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+A first-class **RDF-style knowledge graph** sits on top of the 15 EIA
+domains. It bridges abstract concepts ("Coal emits CO₂", "Natural gas is
+consumed by the residential sector") to concrete EIA datasets, so an agent
+can reason about *what* to query without prior energy knowledge.
+
+## Top-level classes
+
+The ontology defines 8 top-level concepts:
+
+| Class | Examples |
+|---|---|
+| `EnergySource` | Coal, NaturalGas, Solar, Wind, Nuclear, Biomass, CrudeOil, Hydro |
+| `Sector` | Residential, Commercial, Industrial, ElectricPower, Transportation |
+| `Geography` | UnitedStates, State, Region, Country |
+| `EnergyFlow` | Production, Consumption, Import, Export, Generation |
+| `Measurement` | Quantity, Price, Capacity, Emissions, Reserves |
+| `TemporalGranularity` | Annual, Monthly, Weekly, Daily, Hourly |
+| `Projection` | STEO, AEO, IEO |
+| `EnvironmentalImpact` | CO2Emissions, SOxEmissions, NOxEmissions |
+
+## Typed relations
+
+Classes are connected by typed relations:
+
+- `produces` (EnergySource → EnergyFlow)
+- `consumes` (Sector → EnergySource)
+- `emits` (EnergySource → EnvironmentalImpact)
+- `imports` / `exports` (Geography → EnergySource)
+- `measuredBy` (EnergyFlow → Measurement)
+- `projectedBy` (EnergySource → Projection)
+
+## Endpoints
+
+The ontology is served in-memory — no upstream EIA calls — so the agent
+never burns its 5 req/s budget on discovery.
+
+| Endpoint | Returns |
+|---|---|
+| `GET /ontology` | Index — class / relation / mapping counts |
+| `GET /ontology/classes` | All ontology classes (filter by `?parentClass=`) |
+| `GET /ontology/classes/:classId` | Single class + relations + subclasses |
+| `GET /ontology/relations` | All ontology relations (filter by subject / predicate / object) |
+| `GET /ontology/relations/:relationId/evidence` | Mappings + common queries + facet codes |
+| `GET /ontology/domains/:domainId` | Ontology mapping for a single EIA domain |
+| `GET /ontology/graph` | Full in-memory model (classes + relations + mappings) |
+| `GET /ontology/paths?from=&to=` | Multi-hop paths with evidence datasets per hop |
+| `GET /ontology/classes/:classId/comparability` | Which datasets can be validly compared |
+| `GET /ontology/export?format=jsonld\|turtle` | RDF serializations for external tools |
+| `GET /ontology/search?q=` | Keyword search across classes and relations |
+
+## Examples
+
+### What classes are there?
+
+```bash
+curl 'http://localhost:3000/ontology/classes?parentClass=EnergySource' | jq '.classes[].id'
+```
+
+### Which ontology classes emit CO₂?
+
+```bash
+curl 'http://localhost:3000/ontology/relations?predicate=emits' | jq '.relations[] | {subject, object}'
+```
+
+### Map a class to its EIA domain
+
+```bash
+curl http://localhost:3000/ontology/domains/electricity
+```
+
+### Turn a relation into runnable queries
+
+```bash
+curl http://localhost:3000/ontology/relations/coal-emits-co2/evidence | jq '.evidence[].commonQueries'
+```
+
+### Multi-hop paths
+
+How do two concepts connect?
+
+```bash
+curl 'http://localhost:3000/ontology/paths?from=Residential&to=CO2Emissions' | jq '.paths[0].hops'
+```
+
+### Comparability
+
+Which datasets can be validly compared for a class?
+
+```bash
+curl http://localhost:3000/ontology/classes/Electricity/comparability | jq '.comparableGroups'
+```
+
+### RDF export
+
+For external RDF tools:
+
+```bash
+curl 'http://localhost:3000/ontology/export?format=jsonld' | jq .
+curl 'http://localhost:3000/ontology/export?format=turtle'
+```
+
+<Aside type="tip">
+  The ontology-first pattern is the most powerful way to use the wrapper.
+  See [Ontology-first agents](/agents/ontology-first/) for end-to-end examples
+  with and without an LLM.
+</Aside>
+
+## Reference
+
+- [`src/ontology/`](https://github.com/MaxwellCalkin/eia-api-ts/tree/main/src/ontology) — classes, relations, mappings
+- [`examples/agents/06-mastra-ontology-electricity-carbon.ts`](https://github.com/MaxwellCalkin/eia-api-ts/blob/main/examples/agents/06-mastra-ontology-electricity-carbon.ts) — ontology-guided Mastra agent
+- [`examples/agents/07-ontology-consumption-prediction.ts`](https://github.com/MaxwellCalkin/eia-api-ts/blob/main/examples/agents/07-ontology-consumption-prediction.ts) — plain-fetch walkthrough (no LLM)

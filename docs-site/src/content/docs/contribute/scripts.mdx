@@ -1,0 +1,67 @@
+---
+title: Scripts
+description: Every bun script in the repo.
+---
+
+All scripts run with **Bun**. Use `bun run <script>` from the repo root.
+
+## Root (Elysia server)
+
+| Script | Purpose |
+|---|---|
+| `bun dev` | Hot-reload dev server |
+| `bun start` | Production server (no hot reload) |
+| `bun build` | Bundle to `dist/` |
+| `bun test` | Run test suite |
+| `bun run typecheck` | TypeScript check (no emit) |
+| `bun run dump-openapi` | Dump OpenAPI spec to `openapi.json` |
+
+## docs-site/ (Starlight docs)
+
+| Script | Purpose |
+|---|---|
+| `bun dev` | Astro dev server with HMR |
+| `bun run build` | Static build to `docs-site/dist/` |
+| `bun preview` | Preview the built site locally |
+
+## Deploying the docs
+
+See [Deployment](/start/deployment/) for the Dokploy walkthrough.
+
+| Step | Command |
+|---|---|
+| Local preview | `cd docs-site && docker build -t eia-docs . && docker run --rm -p 8080:8080 eia-docs` |
+| Push to registry | `docker build -t registry.example.com/eia-docs:latest ./docs-site && docker push registry.example.com/eia-docs:latest` |
+
+## Common workflows
+
+### Add a feature, then verify
+
+```bash
+bun run typecheck   # catches type errors
+bun test            # runs the suite
+bun run dump-openapi  # regenerates openapi.json
+```
+
+### Update a domain
+
+```bash
+# 1. Edit src/domains/coal.ts
+# 2. Verify
+bun test tests/domains.test.ts
+bun run typecheck
+```
+
+### Add docs content
+
+```bash
+cd docs-site
+bun dev               # live preview at http://localhost:4321
+# edit *.mdx files
+bun run build         # static build → dist/
+```
+
+### Deploy
+
+The docs site auto-deploys on push to your default branch via Dokploy.
+The Elysia server has no auto-deploy — bring your own.

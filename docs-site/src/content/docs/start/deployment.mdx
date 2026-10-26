@@ -1,0 +1,110 @@
+---
+title: Deployment
+description: Ship the docs to your Dokploy VPS.
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+The docs site is a static Starlight build served by nginx in a tiny container.
+You can deploy it on **Dokploy** (Docker-based PaaS on your VPS) in a few
+minutes.
+
+<Aside type="note">
+  The docs site is fully static — no API calls, no env vars. It does *not*
+  need an EIA API key to build or serve.
+</Aside>
+
+## Prerequisites
+
+- A VPS running **Dokploy** (see [dokploy.com](https://dokploy.com/))
+- This repo connected as a Git source in Dokploy
+- (Optional) A domain pointed at your VPS
+
+## Steps
+
+<Steps>
+
+1. **Connect the repo**
+
+   In Dokploy: **Create Service → Application → Git Provider → select repo**.
+
+2. **Set the build configuration**
+
+   | Setting | Value |
+   |---|---|
+   | Build Type | `Dockerfile` |
+   | Dockerfile Path | `docs-site/Dockerfile` |
+   | Build Context | `docs-site/` |
+   | Port | `8080` |
+   | Healthcheck | `/` |
+
+3. **Deploy**
+
+   Click **Deploy**. Dokploy will:
+
+   1. Clone the repo into a build context.
+   2. Run the multi-stage `Dockerfile`:
+      - `oven/bun:1.3-alpine` — installs deps with Bun.
+      - `node:22-alpine` — runs `astro build`, produces `dist/`.
+      - `nginx:1.27-alpine` — serves `dist/` on port `8080`.
+   3. Start the container and route external traffic to it.
+
+4. **Attach a domain (optional)**
+
+   In Dokploy: **Domains → Add Domain → enter `docs.yourdomain.com`**.
+   Dokploy provisions TLS via Let's Encrypt automatically.
+
+5. **Verify**
+
+   ```bash
+   curl -I https://docs.yourdomain.com
+   # HTTP/2 200
+   ```
+
+</Steps>
+
+## Local preview
+
+Reproduce the production image on your laptop:
+
+```bash
+cd docs-site
+docker build -t eia-docs .
+docker run --rm -p 8080:8080 eia-docs
+# Open http://localhost:8080
+```
+
+If you change content, the Dokploy auto-deploy picks it up on the next push
+to your default branch.
+
+## Image size
+
+The final image is roughly **25 MB** — alpine nginx + the static `dist/`
+directory. No runtime dependencies, no Node, no npm.
+
+## Continuous deployment
+
+Once connected, every push to your default branch triggers a rebuild in
+Dokploy. PR previews aren't built automatically; if you want them, wire up a
+separate Dokploy app per branch.
+
+## Troubleshooting
+
+| Symptom | Likely cause |
+|---|---|
+| Build fails at `bun install` | The repo's `bun.lock` is out of sync — run `bun install` locally and commit. |
+| Container starts but 502s | Dokploy port mismatch — confirm the **Port** field is `8080`. |
+| Styles don't load | Stale cache — clear the Dokploy build cache and redeploy. |
+| Old content after deploy | Browser cache — hard reload, or bump the query-string cache-buster. |
+
+## CI builds (without Dokploy)
+
+If you want to build the image separately and push it to your own registry:
+
+```bash
+cd docs-site
+docker build -t registry.yourdomain.com/eia-docs:latest .
+docker push registry.yourdomain.com/eia-docs:latest
+```
+
+Then point a Dokploy app at that image instead of the Git source.

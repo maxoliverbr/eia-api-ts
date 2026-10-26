@@ -1,0 +1,78 @@
+---
+title: State Electricity Profiles
+description: Annual state-level electricity profile — capability, emissions, efficiency, meters, net metering.
+---
+import { Aside } from "@astrojs/starlight/components";
+
+**Tags**: `state`, `electricity`, `capability`, `emissions`
+
+**Use cases**: compare state electricity generation capability; track
+state emissions by fuel; analyze net metering adoption.
+
+<Aside type="note">
+  This domain lives under the upstream `electricity/state-electricity-profiles/...`
+  namespace. The wrapper resolves the friendly id
+  (`state-electricity-profiles/summary`) to the canonical path
+  automatically.
+</Aside>
+
+## Sub-routes (7)
+
+| Sub-route | Summary | Date range |
+|---|---|---|
+| `state-electricity-profiles/capability` | Net summer capability by state and energy source | 1990 → |
+| `state-electricity-profiles/emissions-by-state-by-fuel` | State electricity emissions by fuel | 1990 → |
+| `state-electricity-profiles/energy-efficiency` | State energy efficiency program spending/savings | 1990 → |
+| `state-electricity-profiles/meters` | Number of meters and customer counts | 1990 → |
+| `state-electricity-profiles/net-metering` | Net metering capacity and customers | 1990 → |
+| `state-electricity-profiles/source-disposition` | Sources and disposition | 1990 → |
+| `state-electricity-profiles/summary` | High-level annual state summary | 1990 → |
+
+## Facets
+
+<Aside type="caution">
+  The `summary` sub-route uses **`stateID`** (all-caps ID). Other
+  sub-routes use lowercase `stateid`. Don't mix them up.
+</Aside>
+
+| Facet id | Casing | Used in | Example values |
+|---|---|---|---|
+| `stateID` | all-caps | `summary` | `"CA"`, `"TX"` |
+| `stateid` | lowercase | others | `"CA"`, `"TX"` |
+| `fuelid` | lowercase | `emissions-by-state-by-fuel` | `"NG"`, `"COAL"` |
+
+## Worked examples
+
+```bash
+# Texas emissions by fuel (2022) — uses lowercase stateid
+curl -X POST http://localhost:3000/query \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "domain": "state-electricity-profiles",
+    "route": "emissions-by-state-by-fuel",
+    "frequency": "annual",
+    "start": "2022",
+    "end": "2022",
+    "facets": { "stateid": ["TX"], "fuelid": ["NG"] },
+    "length": 5
+  }'
+
+# Summary (CA + TX, 2022) — stateID, not stateId
+curl -X POST http://localhost:3000/query \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "domain": "state-electricity-profiles",
+    "route": "summary",
+    "frequency": "annual",
+    "start": "2022",
+    "end": "2022",
+    "facets": { "stateID": ["CA", "TX"] },
+    "length": 5
+  }'
+```
+
+## Related domains
+
+- [Electricity](/domains/electricity/) — operational electricity data
+- [CO₂ Emissions](/domains/co2-emissions/) — emissions (deprecated upstream)
+- [SEDS](/domains/seds/) — broader state-level consumption and prices

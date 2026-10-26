@@ -1,0 +1,78 @@
+---
+title: Deprecations
+description: Upstream EIA API deprecations that affect this wrapper.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The wrapper mirrors the EIA API surface; some upstream routes and data
+series have been **deprecated by EIA**. This page summarises what changed
+and how to migrate.
+
+<Aside type="caution">
+  This is a community-curated summary, not an official EIA document.
+  Re-verify against the upstream pages linked at the bottom before
+  relying on any deprecation status.
+</Aside>
+
+## Deprecated API version — APIv1
+
+The entire **APIv1 surface** is deprecated. EIA committed to supporting it
+"until at least January 2023"; no end-of-life date has been published since.
+
+What is gone in v2:
+
+- Legacy routes such as `/series/?series_id=...` and `/aeries/?series_id=...`
+- The `command` parameter pattern (replaced by a RESTful route hierarchy)
+- `Geoset` queries (replaced by the `facets[...]` property on data calls)
+- Separate `relation` / `category` queries (folded into the route tree)
+- Header-based `start` / `end` / `num` pagination (replaced by URL
+  `offset` / `length` parameters)
+- The non-TLS `http://` protocol (v2 is https-only)
+- The quota-free "last update" query (not supported in v2)
+
+**Backward-compat shim**: `/v2/seriesid/{seriesId}` still translates v1
+Series IDs (added in v2.1.0 "Clementia", Nov 2022). This wrapper does not
+expose a dedicated route for it; call the upstream directly if you need it.
+
+## Deprecated data series — CO₂ emissions
+
+The underlying data series behind two upstream routes have been deprecated
+as of 2023. Per EIA: *"Deprecated series as of 2023; now available in SEDS."*
+
+Affected upstream routes:
+
+- `GET/POST /v2/co2-emissions/co2-emissions-aggregates/...`
+- `GET/POST /v2/co2-emissions/co2-emissions-and-carbon-coefficients/...`
+
+**Replacement**: the [SEDS](/domains/seds/) domain, under
+`GET/POST /v2/seds/{...}/data`. The relevant SEDS sub-routes are discoverable
+via `GET /routes/seds` — for example,
+`seds/co2-emissions-from-energy-consumption` carries the same per-state CO₂
+totals that the deprecated route used to serve.
+
+The deprecation is **data-level**: the v2 endpoints still respond, and this
+wrapper does not currently intercept or rewrite calls to them. Until upstream
+stops returning data, calls to the deprecated routes will continue to work.
+
+## What this wrapper does about it
+
+- The wrapper does not intercept, rewrite, or deprecate any upstream call.
+  It proxies them.
+- `/domains` and `/routes/*` responses do not currently surface a
+  `deprecated` field for sub-routes.
+- If a caller hits a deprecated upstream route, the wrapper returns whatever
+  the upstream returns (typically `200` with the deprecated series).
+
+## How to verify
+
+These upstream pages are the source of truth:
+
+- [eia.gov/opendata](https://www.eia.gov/opendata/) — landing page; the "CO₂ Emission
+  Aggregates" entry and the bulk-file list carry the deprecation note.
+- [eia.gov/opendata/documentation](https://www.eia.gov/opendata/documentation.php) — "APIv1 availability"
+  table and the v2.1.0 "Clementia" patch note (Nov 2022).
+
+## Reference
+
+- [`DEPRECATIONS.md`](https://github.com/MaxwellCalkin/eia-api-ts/blob/main/DEPRECATIONS.md) — full upstream deprecation summary

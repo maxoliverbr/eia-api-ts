@@ -1,0 +1,194 @@
+---
+title: Unified /query
+description: The single endpoint that fetches any EIA dataset.
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+The wrapper exposes a single `POST /query` (with a `GET /query` alias) that
+takes a uniform request shape and returns a uniform response envelope. You
+don't need to know which EIA endpoint you're hitting — you specify the
+`domain` and `route`, and the wrapper resolves the upstream path for you.
+
+## Request
+
+```ts
+type QueryRequest = {
+  domain: string         // e.g. "coal", "electricity", "natural-gas"
+  route: string          // a sub-route id, e.g. "aggregate-production"
+  frequency?: string     // "annual" | "monthly" | "weekly" | "daily" | "hourly"
+  start?: string         // inclusive lower bound on `period`
+  end?: string           // inclusive upper bound on `period`
+  data?: string[]        // which columns to return (default: all)
+  facets?: Record<string, string[]>   // facetId → list of values to filter on
+  sort?: Array<{ column: string; direction: 'asc' | 'desc' }>
+  length?: number        // max rows (0–5000)
+  offset?: number        // pagination offset
+}
+```
+
+<Aside type="note">
+  Most of these fields are optional — the upstream defaults apply when
+  omitted. But `domain` and `route` are always required.
+</Aside>
+
+## Response envelope
+
+Every successful query returns the same envelope:
+
+```ts
+type QueryResponse = {
+  response: {
+    apiVersion?: string
+    warnings?: unknown[]
+    request?: { command?: string; params?: unknown }
+    response: {
+      data: Record<string, unknown>[]   // the rows you asked for
+      total?: number                     // total rows matching (before pagination)
+      dateFormat?: string                // e.g. "YYYY", "YYYY-MM"
+      description?: string
+      frequency?: string                 // "annual" / "monthly" / ...
+    }
+  }
+}
+```
+
+The outer `{ response: { data, total, ... } }` shape is the upstream EIA
+shape, mirrored exactly so existing EIA clients can drop in.
+
+## POST vs GET
+
+<Tabs syncKey="method">
+  <TabItem label="POST" icon="seti:json">
+
+    ```bash
+    curl -X POST http://localhost:3000/query \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "domain": "electricity",
+        "route": "retail-sales",
+        "frequency": "annual",
+        "start": "2022",
+        "end": "2024",
+        "sort": [{ "column": "revenue", "direction": "desc" }],
+        "length": 5
+      }'
+    ```
+
+    Use POST for facet filters and complex queries. Recommended.
+
+  </TabItem>
+  <TabItem label="GET" icon="seti:shell">
+
+    ```bash
+    curl 'http://localhost:3000/query?domain=coal&route=aggregate-production&frequency=annual&start=2024&end=2024&data=period,production&length=3'
+    ```
+
+    Same shape, query-string form. Best for simple cases. Note:
+    `data` is a **comma-separated** string, not an array.
+
+  </TabItem>
+</Tabs>
+
+## Pagination
+
+`length` caps the number of rows returned (max **5000**). `offset` skips
+rows for pagination. The `response.total` field always reports the
+**un-paginated** match count so you can compute remaining pages.
+
+```ts
+// Page through a result set
+const pageSize = 1000
+for (let offset = 0; ; offset += pageSize) {
+  const { response } = await fetch('/query', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      domain: 'total-energy',
+      route: 'data',
+      frequency: 'monthly',
+      start: '2020-01',
+      end: '2024-12',
+      facets: { msn: ['ELETPUS'] },
+      length: pageSize,
+      offset,
+    }),
+  }).then(r => r.json())
+
+  processRows(response.data)
+  if (offset + response.data.length >= (response.total ?? Infinity)) break
+}
+```
+
+## Sort
+
+Sort by one or more columns:
+
+```json
+{
+  "sort": [
+    { "column": "period", "direction": "asc" },
+    { "column": "value", "direction": "desc" }
+  ]
+}
+```
+
+## Error responses
+
+| HTTP | When | Body shape |
+|---|---|---|
+| `400` | Unknown `domain` or `route` in registry | `{ error: "validation_error", message, available? }` |
+| `422` | Body validation failed (e.g. unknown field, `length > 5000`) | Elysia validation error |
+| `502` | Upstream EIA call failed | `{ error: "upstream_error", message, upstreamStatus }` |
+
+See [Error handling](/guides/error-handling/) for a full walkthrough.
+
+## Examples
+
+### Minimal call
+
+```bash
+curl -X POST http://localhost:3000/query \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "domain": "coal",
+    "route": "aggregate-production",
+    "frequency": "annual",
+    "start": "2024",
+    "end": "2024"
+  }'
+```
+
+### With columns + sort + pagination
+
+```bash
+curl -X POST http://localhost:3000/query \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "domain": "electricity",
+    "route": "retail-sales",
+    "frequency": "annual",
+    "data": ["period", "location", "revenue"],
+    "sort": [{ "column": "revenue", "direction": "desc" }],
+    "length": 10,
+    "offset": 0
+  }'
+```
+
+### With facet filters
+
+```bash
+curl -X POST http://localhost:3000/query \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "domain": "electricity",
+    "route": "electric-power-operational-data",
+    "frequency": "monthly",
+    "start": "2024-01",
+    "end": "2024-03",
+    "facets": { "fueltypeid": ["NG"], "location": ["CA", "TX"] },
+    "length": 10
+  }'
+```
+
+See [Facets](/concepts/facets/) for the full filtering concept.

@@ -1,0 +1,116 @@
+---
+title: Endpoints
+description: The full HTTP surface.
+---
+
+Every endpoint exposed by the wrapper, in one place. Click through to the
+linked guides for worked examples.
+
+## Meta
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/` | API info and link map |
+| `GET` | `/health` | Liveness probe (no upstream call) |
+| `GET` | `/ready` | Readiness probe (verifies upstream EIA API) |
+| `GET` | `/version` | Server + EIA API versions |
+| `GET` | `/openapi` | Swagger UI |
+| `GET` | `/openapi/json` | OpenAPI 3.1 spec |
+
+## Discovery
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/domains` | All 15 domains with metadata |
+| `GET` | `/domains/:domain` | Single domain + sub-routes |
+| `GET` | `/routes/:domain` | Route tree for a domain (proxied) |
+| `GET` | `/routes/:domain/*` | EIA route listing + leaf metadata |
+| `GET` | `/routes/:domain/*/facet` | List facet IDs for a route |
+| `GET` | `/routes/:domain/*/facet/:facetId` | Possible values for one facet |
+| `GET` | `/schema/:domain/*` | Response shape for a route (alias) |
+
+## Search & query
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/query` | Unified data query (JSON body) |
+| `GET` | `/query` | Same via query string |
+| `POST` | `/search` | Keyword search across datasets |
+
+## Agent guide
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/guide` | Full machine-readable agent playbook |
+| `GET` | `/guide/:domain` | Domain-specific guide slice |
+
+## Ontology
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/ontology` | Ontology index (class / relation / mapping counts) |
+| `GET` | `/ontology/classes` | All ontology classes (filter by `?parentClass=`) |
+| `GET` | `/ontology/classes/:classId` | Single class + relations + subclasses |
+| `GET` | `/ontology/classes/:classId/comparability` | Which datasets can be validly compared |
+| `GET` | `/ontology/relations` | All ontology relations (filter by subject / predicate / object) |
+| `GET` | `/ontology/relations/:relationId/evidence` | Mappings + common queries + facet codes |
+| `GET` | `/ontology/domains/:domainId` | Ontology mapping for a single EIA domain |
+| `GET` | `/ontology/graph` | Full in-memory model |
+| `GET` | `/ontology/paths?from=&to=` | Multi-hop paths with evidence per hop |
+| `GET` | `/ontology/search?q=` | Keyword search across ontology |
+| `GET` | `/ontology/export?format=jsonld\|turtle` | RDF serializations |
+
+## MCP server (when `MCP_ENABLED=true`)
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` / `GET` / `DELETE` | `/mcp` | MCP endpoint (Stateless HTTP transport) |
+
+See [MCP Server](/mcp/overview/) for the full surface.
+
+## Response envelopes
+
+### Domain listing
+
+```json
+{
+  "domains": [
+    { "id": "coal", "name": "Coal", "description": "...", "subRoutes": [...], "tags": [...] }
+  ]
+}
+```
+
+### Search
+
+```json
+{
+  "query": "...",
+  "total": 5,
+  "hits": [{ "domain": "...", "subRouteId": "...", "path": "...", "title": "...", "score": 14.2 }]
+}
+```
+
+### Query
+
+```json
+{
+  "response": {
+    "data": [...],
+    "total": 5,
+    "dateFormat": "YYYY",
+    "description": "...",
+    "frequency": "annual"
+  }
+}
+```
+
+### Error
+
+```json
+{
+  "error": "validation_error",
+  "message": "No domain registered with id \"nope\". Available: aeo, ieo, ..."
+}
+```
+
+See [Error handling](/guides/error-handling/) for the full taxonomy.

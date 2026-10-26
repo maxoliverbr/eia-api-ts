@@ -1,0 +1,60 @@
+---
+title: RTO
+description: Daily and hourly RTO interchange, fuel-type, region, and sub-BA data.
+---
+import { Aside } from "@astrojs/starlight/components";
+
+**Tags**: `rto`, `electricity`, `grid`, `operations`
+
+**Use cases**: monitor day-ahead and real-time interchange between RTOs;
+track fuel-mix generation by RTO region; analyze sub-balancing authority
+flows.
+
+<Aside type="note">
+  RTO routes live under the upstream `electricity/rto/...` namespace. The
+  wrapper resolves the friendly id (`rto/daily-fuel-type-data`) to the
+  canonical path automatically — you don't need to remember the prefix.
+</Aside>
+
+## Sub-routes (8)
+
+| Sub-route | Summary | Typical frequency | Date range |
+|---|---|---|---|
+| `rto/daily-interchange-data` | Inter-RTO interchange (daily) | daily | 2018 → |
+| `rto/daily-fuel-type-data` | Daily fuel-type generation by RTO | daily | 2018 → |
+| `rto/daily-region-data` | Daily totals by RTO region | daily | 2018 → |
+| `rto/daily-region-sub-ba-data` | Daily sub-BA totals | daily | 2018 → |
+| `rto/interchange-data` | Inter-RTO interchange (hourly) | daily | 2018 → |
+| `rto/fuel-type-data` | Hourly fuel-type generation by RTO | daily | 2018 → |
+| `rto/region-data` | Hourly totals by RTO region | daily | 2018 → |
+| `rto/region-sub-ba-data` | Hourly sub-BA totals | daily | 2018 → |
+
+RTOs covered: CAISO, ERCOT, ISONE, MISO, NYISO, PJM, SPP.
+
+## Worked example
+
+```bash
+curl -X POST http://localhost:3000/query \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "domain": "rto",
+    "route": "daily-fuel-type-data",
+    "frequency": "daily",
+    "start": "2024-01-01",
+    "end": "2024-01-07",
+    "length": 5
+  }'
+```
+
+## Agent guidance
+
+- Use the friendly sub-route id (`rto/daily-fuel-type-data`), not the
+  upstream path (`electricity/rto/daily-fuel-type-data`).
+- Daily and hourly variants exist for each major metric — pick the right
+  cadence.
+
+## Related domains
+
+- [Electricity](/domains/electricity/) — national-level electricity data
+- [State Electricity Profiles](/domains/state-electricity-profiles/) — annual state summaries
+- [Nuclear Outages](/domains/nuclear-outages/) — generation availability

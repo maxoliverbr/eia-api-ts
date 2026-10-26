@@ -1,0 +1,52 @@
+---
+title: IEO
+description: International Energy Outlook — long-term international projections.
+---
+import { Aside } from "@astrojs/starlight/components";
+
+**Tags**: `projection`, `long-term`, `international`, `global`
+
+**Use cases**: project world energy demand by region; compare energy
+mixes across countries; analyze long-term international price trends.
+
+<Aside type="caution">
+  Sub-routes are **publication years** (e.g. `2023`). Call
+  `GET /routes/ieo` first to discover what's actually available.
+</Aside>
+
+## Sub-routes
+
+| Sub-route | Summary |
+|---|---|
+| `{year}` | Projections for the given IEO publication year |
+
+## Worked example
+
+```bash
+curl -X POST http://localhost:3000/query \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "domain": "ieo",
+    "route": "2023",
+    "frequency": "annual",
+    "start": "2025",
+    "end": "2030",
+    "length": 5
+  }'
+```
+
+## Agent guidance
+
+- **Discover available years first**:
+
+  ```bash
+  curl http://localhost:3000/routes/ieo | jq '.response.routes'
+  ```
+
+- IEO covers world regions; pair with the
+  [International](/domains/international/) domain for historical context.
+
+## Related domains
+
+- [AEO](/domains/aeo/) — U.S. long-term projections
+- [International](/domains/international/) — historical global data

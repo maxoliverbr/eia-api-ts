@@ -1,0 +1,104 @@
+---
+title: Electricity
+description: U.S. electric power — operational data, facility fuel, generator capacity, retail sales.
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+**Tags**: `electricity`, `power`, `generation`, `us`
+
+**Use cases**: analyze electricity generation by fuel and region; track
+retail sales and revenue by state and sector; monitor operating generator
+capacity.
+
+## Sub-routes (4)
+
+| Sub-route | Summary | Typical frequency | Date range |
+|---|---|---|---|
+| `electric-power-operational-data` | Electric power operational data | monthly | 2018 → |
+| `facility-fuel` | Facility-level fuel consumption | monthly | 2011 → |
+| `operating-generator-capacity` | Operating generator capacity | monthly | 2011 → |
+| `retail-sales` | Retail sales, revenue, customers | monthly | 2001 → |
+
+## Facets
+
+<Aside type="caution">
+  State identifiers vary by route: `location` accepts a state name (e.g.
+  `"CALIFORNIA"`); `stateid` is a 2-letter code (e.g. `"CA"`).
+</Aside>
+
+| Facet id | Casing | Example values |
+|---|---|---|
+| `location` | lowercase | `"US-TOTAL"`, `"CALIFORNIA"`, `"TEXAS"` |
+| `stateid` | lowercase | `"CA"`, `"TX"`, `"NY"` |
+| `sectorid` | lowercase | `"RES"`, `"COM"`, `"IND"`, `"TRA"` |
+| `fueltypeid` | lowercase | `"NG"`, `"NUC"`, `"SUN"`, `"WND"`, `"COL"` |
+| `plantId` | lowercase | EIA plant ids |
+
+## Worked example
+
+<Tabs syncKey="method">
+  <TabItem label="cURL" icon="seti:shell">
+
+    ```bash
+    curl -X POST http://localhost:3000/query \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "domain": "electricity",
+        "route": "electric-power-operational-data",
+        "frequency": "monthly",
+        "start": "2024-01",
+        "end": "2024-03",
+        "facets": { "fueltypeid": ["NG"], "location": ["CA", "TX"] },
+        "length": 5
+      }'
+    ```
+
+  </TabItem>
+  <TabItem label="TypeScript" icon="seti:typescript">
+
+    ```ts
+    const r = await fetch('http://localhost:3000/query', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        domain: 'electricity',
+        route: 'retail-sales',
+        frequency: 'annual',
+        start: '2022',
+        end: '2022',
+        sort: [{ column: 'revenue', direction: 'desc' }],
+        length: 5,
+      }),
+    }).then(r => r.json())
+    ```
+
+  </TabItem>
+</Tabs>
+
+## Agent guidance
+
+- **Default endpoint for "electricity generation by state/fuel" questions**:
+  `electric-power-operational-data`.
+- **Frequency is monthly** by default for these routes.
+- **`fueltypeid` values are short codes** — `"NG"` for natural gas, `"NUC"`
+  for nuclear, `"SUN"` for solar, `"WND"` for wind. Always list the
+  facet first.
+
+## Common tasks
+
+| Intent | Sub-route |
+|---|---|
+| "electricity generation by state" | `electric-power-operational-data` |
+| "electricity generation by fuel" | `electric-power-operational-data` |
+| "power plant fuel consumption" | `facility-fuel` |
+| "generator capacity" | `operating-generator-capacity` |
+| "retail electricity sales" | `retail-sales` |
+| "electricity revenue" | `retail-sales` |
+
+## Related domains
+
+- [State Electricity Profiles](/domains/state-electricity-profiles/) —
+  annual state-level summary
+- [RTO](/domains/rto/) — daily/hourly RTO operational data
+- [Coal](/domains/coal/) — coal consumption by power plants

@@ -1,0 +1,98 @@
+---
+title: Coal
+description: Comprehensive U.S. coal data — production, consumption, exports/imports, prices, reserves, shipments.
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+**Tags**: `fossil-fuels`, `mining`, `energy`, `us`
+
+**Use cases**: track historical coal production by state and mine type;
+analyze coal shipments from mines to power plants; monitor export/import
+trends and pricing; assess remaining reserves and mine capacity.
+
+## Sub-routes (13)
+
+| Sub-route | Summary | Typical frequency | Date range |
+|---|---|---|---|
+| `aggregate-production` | Aggregate U.S. coal production | annual | 1949 → |
+| `consumption-and-quality` | Coal consumption and quality | annual | 1949 → |
+| `exports-imports-quantity-price` | Exports/imports quantity and price | annual | 1949 → |
+| `market-sales-price` | Market sales price | annual | 1979 → |
+| `mine-production` | Mine-level production | annual | 1979 → |
+| `price-by-rank` | Coal price by rank | annual | 1979 → |
+| `reserves-capacity` | Reserves and capacity | annual | 1974 → |
+| `shipments/by-mine-by-plant` | Mine → plant shipments (detail) | annual | — |
+| `shipments/mine-aggregates` | Mine → plant aggregates | annual | — |
+| `shipments/mine-state-aggregates` | Mine → state aggregates | annual | — |
+| `shipments/plant-aggregates` | Plant aggregates | annual | — |
+| `shipments/plant-state-aggregates` | Plant → state aggregates | annual | — |
+| `shipments/receipts` | Plant receipts | annual | — |
+
+All coal routes are **annual-only**; `frequency=monthly` is rejected by
+upstream.
+
+## Facets
+
+| Facet id | Casing | Example values |
+|---|---|---|
+| `stateRegionId` | camelCase | `AK`, `WY`, `MT`, ... |
+| `coalRankId` | camelCase | `BIT`, `SUB`, `LIG`, ... |
+| `mineTypeId` | camelCase | `UG`, `SUR`, `DA`, ... |
+
+## Worked example
+
+<Tabs syncKey="method">
+  <TabItem label="cURL" icon="seti:shell">
+
+    ```bash
+    curl -X POST http://localhost:3000/query \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "domain": "coal",
+        "route": "aggregate-production",
+        "frequency": "annual",
+        "start": "2020",
+        "end": "2024",
+        "length": 20
+      }'
+    ```
+
+  </TabItem>
+  <TabItem label="TypeScript" icon="seti:typescript">
+
+    ```ts
+    const r = await fetch('http://localhost:3000/query', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        domain: 'coal',
+        route: 'aggregate-production',
+        frequency: 'annual',
+        start: '2020',
+        end: '2024',
+        length: 20,
+      }),
+    }).then(r => r.json())
+
+    console.log(r.response.total, r.response.data)
+    ```
+
+  </TabItem>
+</Tabs>
+
+## Agent guidance
+
+- **Aggregate vs mine-level**: `aggregate-production` has no mine detail.
+  For mine-level breakdowns use `mine-production` with the `mineId` or
+  `mineState` facet.
+- **Mine-level data starts later** than the aggregate series (1979 vs 1949).
+- **Facet ids are camelCase**: `stateRegionId`, `coalRankId`, `mineTypeId`
+  (not all-lowercase). Always run `GET /routes/coal/{route}/facet/{id}`
+  first to confirm.
+
+## Source
+
+[`src/domains/coal.ts`](https://github.com/MaxwellCalkin/eia-api-ts/blob/main/src/domains/coal.ts)
+— the most richly documented domain in the wrapper. Use it as a reference
+when adding metadata to other domains.

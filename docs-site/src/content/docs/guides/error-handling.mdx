@@ -1,0 +1,131 @@
+---
+title: Error handling
+description: The four main error classes and how to recover.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The wrapper surfaces four main error classes. A robust agent handles all
+four — and has a clear policy for each.
+
+## The error matrix
+
+| HTTP | When | Recovery |
+|---|---|---|
+| `422` | Body validation (e.g. `q: ""` for `/search`) | Fix the request body; re-validate client-side if possible |
+| `400` (`error: "validation_error"`) | Unknown domain in `/query` | Call `/search` to suggest an alternative |
+| `502` (`error: "upstream_error"`) | Upstream EIA failed | Retry with backoff, or fall back to cached data |
+| `429` (`error: "upstream_error"`) | EIA throttled the wrapper; all upstream traffic is paused | Wait for `Retry-After`, then retry |
+| `503` (`error: "upstream_error"`) | The wrapper's EIA queue is full | Wait for `Retry-After`, then retry |
+| `401` (from upstream) | Bad `EIA_API_KEY` | Surface as an actionable error to the user |
+| `404` | Domain / route not in registry | Discover via `/domains` or `/routes` |
+
+## A typed error class
+
+```ts
+export class EiaClientError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+    public readonly errorCode?: string,
+    public readonly upstreamStatus?: number,
+    public readonly body?: unknown,
+  ) {
+    super(message)
+    this.name = 'EiaClientError'
+  }
+}
+
+export async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(`http://localhost:3000${path}`, init)
+  if (!res.ok) {
+    const body = await res.json().catch(() => undefined)
+    throw new EiaClientError(
+      `HTTP ${res.status} on ${path}`,
+      res.status,
+      (body as any)?.error,
+      (body as any)?.upstreamStatus,
+      body,
+    )
+  }
+  return res.json() as Promise<T>
+}
+```
+
+## Handling each class
+
+```ts
+import { EiaClientError, fetchJson } from './shared'
+
+try {
+  await fetchJson('/query', { /* ... */ })
+} catch (err) {
+  if (err instanceof EiaClientError) {
+    if (err.status === 422) {
+      // Fix the body — re-validate with the schema before retrying.
+    }
+    if (err.status === 400 && err.errorCode === 'validation_error') {
+      // Unknown domain. Call /search to suggest an alternative
+      // and ask the user to disambiguate.
+    }
+    if (err.status === 502) {
+      // Upstream down. Retry with exponential backoff.
+      // 429/503 are different: honour the Retry-After header instead.
+    }
+    if (err.upstreamStatus === 401) {
+      // Bad EIA_API_KEY on the server. Surface to the user; this
+      // is an ops issue, not an agent issue.
+    }
+    if (err.status === 404) {
+      // Domain or route not in registry. Re-discover via /domains.
+    }
+  }
+  throw err
+}
+```
+
+## Retries with backoff
+
+```ts
+async function withBackoff<T>(fn: () => Promise<T>, max = 3): Promise<T> {
+  let delay = 500
+  for (let attempt = 1; attempt <= max; attempt++) {
+    try {
+      return await fn()
+    } catch (err) {
+      if (attempt === max) throw err
+      if (err instanceof EiaClientError && err.status === 502) {
+        await new Promise((r) => setTimeout(r, delay))
+        delay *= 2
+      } else {
+        throw err // non-retryable
+      }
+    }
+  }
+  throw new Error('unreachable')
+}
+```
+
+## Anti-patterns
+
+<Aside type="caution">
+  Do **not** retry `400` / `422` without changing the body. The error is
+  deterministic; retrying just wastes rate-limit budget.
+</Aside>
+
+<Aside type="caution">
+  Do **not** retry `401`. It's an ops issue. Surface it.
+</Aside>
+
+<Aside type="tip">
+  On `429` or `503`, wait for the `Retry-After` header before retrying. The
+  wrapper does not retry `429`s itself: it pauses all EIA traffic so the key
+  isn't suspended, and retrying sooner just gets another `429`.
+</Aside>
+
+## Reference
+
+- [`examples/agents/04-error-recovery.ts`](https://github.com/MaxwellCalkin/eia-api-ts/blob/main/examples/agents/04-error-recovery.ts)
+  — full runnable example
+- [`examples/shared.ts`](https://github.com/MaxwellCalkin/eia-api-ts/blob/main/examples/shared.ts)
+  — `EiaClientError` and `fetchJson` helpers

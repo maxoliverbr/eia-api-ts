@@ -1,0 +1,37 @@
+---
+title: Nuclear Outages
+description: U.S. nuclear power plant outage status.
+---
+
+**Tags**: `nuclear`, `outages`, `electricity`, `us`
+
+**Use cases**: track real-time nuclear unit outages; analyze historical
+outage patterns by facility; monitor U.S. nuclear capacity factor trends.
+
+## Sub-routes (3)
+
+| Sub-route | Summary | Typical frequency | Date range |
+|---|---|---|---|
+| `facility-nuclear-outages` | Facility-level outages | daily | 2014 → |
+| `generator-nuclear-outages` | Generator/reactor-level outages | daily | 2014 → |
+| `us-nuclear-outages` | National-level summary | daily | 2014 → |
+
+## Worked example
+
+```bash
+curl -X POST http://localhost:3000/query \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "domain": "nuclear-outages",
+    "route": "facility-nuclear-outages",
+    "frequency": "daily",
+    "start": "2024-01",
+    "end": "2024-12",
+    "length": 5
+  }'
+```
+
+## Related domains
+
+- [Electricity](/domains/electricity/) — operational generation data
+- [State Electricity Profiles](/domains/state-electricity-profiles/) — annual state summaries

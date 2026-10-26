@@ -1,0 +1,104 @@
+---
+title: Domains
+description: All 15 EIA data domains covered by the wrapper.
+---
+
+import { LinkCard } from '@astrojs/starlight/components';
+
+The wrapper covers **15 EIA domains**. Each one ships with rich metadata
+(description, tags, use cases, sub-routes, examples, agent hints, task→route
+table) so agents can pick the right dataset without prior knowledge.
+
+<LinkCard
+  title="AEO — Annual Energy Outlook"
+  description="Long-term projections of U.S. energy supply, demand, prices, and emissions. Publication-year keyed."
+  href="/domains/aeo/"
+/>
+<LinkCard
+  title="IEO — International Energy Outlook"
+  description="Long-term international projections. Same publication-year pattern as AEO."
+  href="/domains/ieo/"
+/>
+<LinkCard
+  title="CO₂ Emissions"
+  description="State-level CO₂ emissions by sector and fuel. **Deprecated upstream** — see SEDS for replacement."
+  href="/domains/co2-emissions/"
+/>
+<LinkCard
+  title="Coal"
+  description="13 sub-routes covering production, consumption, exports/imports, prices, reserves, and mine→plant shipments."
+  href="/domains/coal/"
+/>
+<LinkCard
+  title="Crude Oil Imports"
+  description="Monthly U.S. crude oil imports. Flat single-route domain."
+  href="/domains/crude-oil-imports/"
+/>
+<LinkCard
+  title="Densified Biomass"
+  description="8 sub-routes covering pellet production, capacity, sales, exports, feedstocks."
+  href="/domains/densified-biomass/"
+/>
+<LinkCard
+  title="Electricity"
+  description="4 sub-routes: operational data, facility fuel, generator capacity, retail sales."
+  href="/domains/electricity/"
+/>
+<LinkCard
+  title="International"
+  description="International energy data by country/region. Flat single-route domain."
+  href="/domains/international/"
+/>
+<LinkCard
+  title="Natural Gas"
+  description="2-level routes (`cons/sum`, `pri/sum`, `stor/wkly`, …) covering consumption, prices, storage, production, imports."
+  href="/domains/natural-gas/"
+/>
+<LinkCard
+  title="Nuclear Outages"
+  description="3 sub-routes of daily nuclear outage data (facility, generator, US)."
+  href="/domains/nuclear-outages/"
+/>
+<LinkCard
+  title="RTO"
+  description="8 sub-routes of daily and hourly RTO interchange, fuel-type, region, and sub-BA data."
+  href="/domains/rto/"
+/>
+<LinkCard
+  title="SEDS"
+  description="State Energy Data System — comprehensive state-level consumption, prices, and CO₂."
+  href="/domains/seds/"
+/>
+<LinkCard
+  title="State Electricity Profiles"
+  description="7 sub-routes of state-level electricity summary, capability, emissions, net metering, and more."
+  href="/domains/state-electricity-profiles/"
+/>
+<LinkCard
+  title="STEO — Short-Term Energy Outlook"
+  description="Short-term (18-month) projections of U.S. energy supply, demand, prices."
+  href="/domains/steo/"
+/>
+<LinkCard
+  title="Total Energy"
+  description="Comprehensive monthly U.S. energy summary across all fuels and sectors (MSN-keyed)."
+  href="/domains/total-energy/"
+/>
+
+## Programmatic discovery
+
+If you don't want to hard-code domain ids, discover them at runtime:
+
+```bash
+curl http://localhost:3000/domains | jq '.domains[] | {id, name, subRoutes: (.subRoutes | length)}'
+```
+
+Or search by intent:
+
+```bash
+curl -X POST http://localhost:3000/search \
+  -H 'Content-Type: application/json' \
+  -d '{"q": "monthly electricity generation by fuel"}' | jq '.hits[].path'
+```
+
+See [Discovery](/concepts/discovery/) for the full loop.

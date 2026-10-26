@@ -1,0 +1,112 @@
+---
+title: Natural Gas
+description: U.S. natural gas — consumption, prices, storage, production, imports, exploration.
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+**Tags**: `natural-gas`, `fossil-fuels`, `us`
+
+**Use cases**: track natural gas consumption by sector, state, or end use;
+monitor wellhead, city-gate, and retail natural gas prices; analyze
+working-gas storage levels; follow pipeline and LNG import/export flows.
+
+## Sub-routes (7)
+
+Natural Gas uses a **2-level route structure**: `{category}/{dataset}` —
+e.g. `cons/sum`, `pri/sum`. Always use the full id.
+
+| Sub-route | Summary | Typical frequency | Date range |
+|---|---|---|---|
+| `cons/sum` | Consumption by end use | annual, monthly | 1973 → |
+| `pri/sum` | Price summary (all sectors) | annual, monthly | 1973 → |
+| `prod/oilwells` | Production — oilwell counts | annual | 1973 → |
+| `stor/wkly` | Weekly working gas storage | **weekly only** | 2010 → |
+| `move/impc` | Pipeline imports by country | annual, monthly | 1973 → |
+| `enr/sum` | Exploration & reserves summary | annual | 1973 → |
+| `sum/lsum` | LNG summary | annual, monthly | 1973 → |
+
+<Aside type="caution">
+  The weekly storage route (`stor/wkly`) **only supports `frequency=weekly`**.
+  Annual/monthly requests fail upstream. Use ISO date ranges
+  (`YYYY-MM-DD`).
+</Aside>
+
+## Facets
+
+| Facet id | Casing | Example values |
+|---|---|---|
+| `duoarea` | lowercase | `"SCA"`, `"NY"`, `"TEX"` (state codes, not full names) |
+| `product` | lowercase | `"Residential"`, `"Commercial"`, `"Industrial"` |
+| `process` | lowercase | `"Wellhead"`, `"City Gate"`, `"Delivered to Residential"` |
+
+## Worked example
+
+<Tabs syncKey="method">
+  <TabItem label="Annual price" icon="seti:shell">
+
+    ```bash
+    curl -X POST http://localhost:3000/query \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "domain": "natural-gas",
+        "route": "pri/sum",
+        "frequency": "annual",
+        "start": "2020",
+        "end": "2024",
+        "facets": { "duoarea": ["SCA"] },
+        "data": ["value"],
+        "sort": [{ "column": "period", "direction": "asc" }],
+        "length": 100
+      }'
+    ```
+
+  </TabItem>
+  <TabItem label="Weekly storage" icon="seti:shell">
+
+    ```bash
+    curl -X POST http://localhost:3000/query \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "domain": "natural-gas",
+        "route": "stor/wkly",
+        "frequency": "weekly",
+        "start": "2024-01-01",
+        "end": "2024-01-28",
+        "data": ["value"],
+        "length": 50
+      }'
+    ```
+
+  </TabItem>
+</Tabs>
+
+## Agent guidance
+
+- **Sub-route ids are 2-level**: use `"pri/sum"`, never `"pri"` or `"sum"`.
+- **Filter values are ids, not names**: `"SCA"` for Southern California, not
+  `"CALIFORNIA"`. Always hit `/facet/{id}` first to map name → id.
+- **For prices, narrow by `process` facet** — without it you get a
+  cross-product of wellhead / city-gate / delivered prices.
+
+## Common tasks
+
+| Intent | Sub-route |
+|---|---|
+| "natural gas price" | `pri/sum` |
+| "state gas price" | `pri/sum` |
+| "residential gas price" | `pri/sum` |
+| "natural gas consumption" | `cons/sum` |
+| "gas consumption by sector" | `cons/sum` |
+| "natural gas storage" | `stor/wkly` |
+| "working gas storage" | `stor/wkly` |
+| "natural gas production" | `prod/oilwells` |
+| "gas reserves" | `enr/sum` |
+| "gas imports" | `move/impc` |
+| "lng" | `sum/lsum` |
+
+## Related domains
+
+- [Electricity](/domains/electricity/) — electric-power gas demand
+- [Total Energy](/domains/total-energy/) — cross-fuel summaries
+- [International](/domains/international/) — international gas flows
