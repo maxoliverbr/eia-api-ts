@@ -208,7 +208,7 @@ Add to Claude Desktop (`~/Library/Application Support/Claude/claude_desktop_conf
 
 The MCP server exposes:
 
-- **9 tools** — `browse_relations`, `get_class_detail`, `get_domain_mapping`, `get_relation_evidence`, `search_ontology`, `list_facets`, `get_facet_values`, `query_eia`, `query_with_summary` (same shapes as the canonical reference `examples/agents/06-mastra-ontology-electricity-carbon.ts`).
+- **9 tools** — `browse_relations`, `get_class_detail`, `get_domain_mapping`, `get_relation_evidence`, `search_ontology`, `list_facets`, `get_facet_values`, `query_eia`, `query_with_summary` (shapes started from `examples/agents/06-mastra-ontology-electricity-carbon.ts`; the MCP `query_with_summary` also groups by unit and flags series with no units, see the docs site's MCP tools page).
 - **2 resources** — `eia://guide` (full playbook) and `eia://guide/{domainId}` (per-domain slice), read-through cache with 1h TTL.
 
 Built on MCP TypeScript SDK v2 (`@modelcontextprotocol/server`) via `createMcpHandler` — Bun-native, no Node-HTTP bridge, stateless. Speaks the **2026-07-28** protocol; 2025-era clients (plain `initialize` handshake) are still served, statelessly. No Host/Origin validation is applied — keep `/mcp` on a trusted network or put a reverse proxy in front. The EIA API key stays server-side; MCP only ever calls the wrapper's own REST API.

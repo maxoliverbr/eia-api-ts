@@ -105,18 +105,29 @@ response shape.
 
 ## 9. `query_with_summary`
 
-The primary data tool. Injects `data:["value"]`, groups by series, and
-returns min/max/avg/latest/yoyChangePct per series.
+The primary data tool. Injects `data:["value"]`, groups rows by series and
+unit, and returns min/max/avg/latest/yoyChangePct per group.
 
 | Parameter | Type | Required | Description |
 |---|---|---|---|
 | `domain` | string | yes | EIA domain id |
 | `route` | string | yes | Sub-route id |
-| `frequency` | string | yes | Always pass this; the summary tool can't pick a default |
-| `start` | string | yes | Start period |
-| `end` | string | yes | End period |
+| `frequency` | string | no | `annual` \| `monthly` \| `quarterly` |
+| `start` | string | no | Start period |
+| `end` | string | no | End period |
 | `facets` | object | no | `{ facetId: [values] }` |
-| `groupBy` | string[] | no | Additional columns to group by |
+| `length` | integer | no | Row cap (default 500, max 5000) |
+| `requireUnits` | boolean | no | Fail instead of returning series that have no units |
+
+### Units
+
+Units are read from the `units` column, or from a `*-units` column such as
+coal's `production-units`. Rows in different units are never averaged
+together: a series reported in two units appears as two `bySeries` entries.
+
+A series with no units is returned with `unitsMissing: true` and no `units`
+key. With `requireUnits: true`, the tool returns an error that names those
+series instead.
 
 ## Reference
 
