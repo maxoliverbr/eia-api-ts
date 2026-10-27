@@ -171,7 +171,7 @@ export const queryEia = (client: McpClient) => ({
 // ---------------------------------------------------------------------------
 export const queryWithSummary = (client: McpClient) => ({
   description:
-    'Run an EIA query and return compact per-series statistics. Always injects data:["value"] so numeric values are present. Each series entry has: description, units, periodRange, count, min, max, avg, latest {period, value}, and yoyChangePct. If bySeries is empty, the endpoint may use a different value column — fall back to query_eia to inspect the raw shape.',
+    'Run an EIA query and return compact per-series statistics. Always injects data:["value"] so numeric values are present. Each series entry has: description, units, periodRange, count, min, max, avg, latest {period, value}, and yoyChangePct. Series whose rows carry no unit get unitsMissing: true; pass requireUnits: true to fail instead. If bySeries is empty, the endpoint may use a different value column — fall back to query_eia to inspect the raw shape.',
   inputSchema: z.object({
     domain: z.string().describe('Domain id.'),
     route: z.string().describe('Sub-route id.'),
@@ -183,11 +183,20 @@ export const queryWithSummary = (client: McpClient) => ({
       .optional()
       .describe('Facet filters, e.g. { fueltypeid: ["COL", "NG"] }.'),
     length: z.number().int().min(1).max(5000).optional().describe('Max rows (default 500).'),
+    requireUnits: z
+      .boolean()
+      .optional()
+      .describe('If true, error when any series has no units instead of returning it with unitsMissing: true.'),
   }),
-  execute: async (params: Record<string, unknown>) => {
+  execute: async ({ requireUnits, ...params }: Record<string, unknown>) => {
     const body = { ...params, data: ['value'], length: (params['length'] as number) ?? 500 }
     const r = (await client.post('/query', body)) as { response?: { data?: RawEiaRow[] } }
     const rows = r.response?.data ?? []
-    return asToolResult(summarizeRows(String(params['route']), rows))
+    const summary = summarizeRows(String(params['route']), rows)
+    const missing = summary.bySeries.filter((s) => s.unitsMissing).map((s) => s.series)
+    if (requireUnits && missing.length > 0) {
+      throw new Error(`query_with_summary: no units for series ${missing.join(', ')}`)
+    }
+    return asToolResult(summary)
   },
 })

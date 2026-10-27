@@ -111,4 +111,35 @@ describe('MCP tools', () => {
     expect(summary.bySeries[0].max).toBe(110)
     expect(summary.bySeries[0].yoyChangePct).toBeCloseTo(10, 5)
   })
+
+  const rowsResponse = (data: unknown[]) => [{ status: 200, body: JSON.stringify({ response: { data } }) }]
+  const unitRows = [
+    { period: '2020', value: 1, series: 'A', units: 'Btu' },
+    { period: '2020', value: 1000, series: 'A', units: 'MMBtu' },
+    { period: '2020', value: 5, series: 'C', 'production-units': 'thousand short tons' },
+    { period: '2020', value: 7, series: 'B' },
+  ]
+
+  it('query_with_summary flags missing units and never mixes units', async () => {
+    const t = queryWithSummary(makeClient(mockFetch(rowsResponse(unitRows))))
+    const r = await t.execute({ domain: 'coal', route: 'r' })
+    const summary = JSON.parse(r.content[0]!.text)
+    const by = (series: string, units?: string) =>
+      summary.bySeries.find((s: { series: string; units?: string }) => s.series === series && s.units === units)
+    expect(summary.bySeries.length).toBe(4)
+    expect(by('A', 'Btu').max).toBe(1)
+    expect(by('A', 'MMBtu').max).toBe(1000)
+    expect(by('C', 'thousand short tons').unitsMissing).toBeUndefined()
+    expect(by('B').unitsMissing).toBe(true)
+  })
+
+  it('query_with_summary with requireUnits throws naming the unit-less series', async () => {
+    const t = queryWithSummary(makeClient(mockFetch(rowsResponse(unitRows))))
+    await expect(t.execute({ domain: 'coal', route: 'r', requireUnits: true })).rejects.toThrow(
+      'no units for series B',
+    )
+    const fetch = mockFetch(rowsResponse(unitRows.slice(0, 3)))
+    await queryWithSummary(makeClient(fetch)).execute({ domain: 'coal', route: 'r', requireUnits: true })
+    expect(JSON.parse(String(fetch.calls[0]?.init?.body)).requireUnits).toBeUndefined()
+  })
 })

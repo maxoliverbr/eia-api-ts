@@ -14,6 +14,7 @@ export type SummaryResult = {
     series: string
     description: string | undefined
     units: string | undefined
+    unitsMissing?: true
     periodRange: [string, string]
     count: number
     min: number
@@ -34,16 +35,27 @@ const toNum = (v: unknown): number | null => {
   return null
 }
 
+// EIA names the unit column `units` on most routes but `<metric>-units` on
+// some (coal: `production-units`).
+const unitsOf = (r: RawEiaRow): string | undefined => {
+  const key = 'units' in r ? 'units' : Object.keys(r).find((k) => k.endsWith('-units'))
+  const v = key ? r[key] : undefined
+  return typeof v === 'string' && v.length > 0 ? v : undefined
+}
+
 export const summarizeRows = (route: string, rows: RawEiaRow[]): SummaryResult => {
   const withValues = rows.filter((r) => toNum(r['value']) !== null)
-  const bySeries = new Map<string, RawEiaRow[]>()
+  // Group on (series, units) so rows in different units are never averaged together.
+  const bySeries = new Map<string, { series: string; units: string | undefined; rows: RawEiaRow[] }>()
   for (const r of withValues) {
-    const key = (r['series'] as string | undefined) ?? 'unknown'
-    const arr = bySeries.get(key) ?? []
-    arr.push(r)
-    bySeries.set(key, arr)
+    const series = (r['series'] as string | undefined) ?? 'unknown'
+    const units = unitsOf(r)
+    const key = JSON.stringify([series, units ?? null])
+    const g = bySeries.get(key) ?? { series, units, rows: [] }
+    g.rows.push(r)
+    bySeries.set(key, g)
   }
-  const seriesOut = [...bySeries.entries()].map(([series, group]) => {
+  const seriesOut = [...bySeries.values()].map(({ series, units, rows: group }) => {
     const sorted = [...group].sort((a, b) =>
       String(a['period'] ?? '').localeCompare(String(b['period'] ?? '')),
     )
@@ -58,7 +70,8 @@ export const summarizeRows = (route: string, rows: RawEiaRow[]): SummaryResult =
     return {
       series,
       description: last?.['series-description'] as string | undefined,
-      units: last?.['units'] as string | undefined,
+      units,
+      ...(units === undefined && { unitsMissing: true as const }),
       periodRange: [String(sorted[0]?.['period'] ?? ''), String(last?.['period'] ?? '')] as [string, string],
       count: values.length,
       min,
