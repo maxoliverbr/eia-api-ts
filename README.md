@@ -474,6 +474,8 @@ A full per-endpoint, per-domain reference is in [`docs/EXAMPLES.md`](./docs/EXAM
 
 ## 🏗️ Architecture
 
+[![Architecture diagram of maxoliverbr/eia-api-ts](https://gitdiagram.com/maxoliverbr/eia-api-ts/diagram.png)](https://gitdiagram.com/maxoliverbr/eia-api-ts?utm_source=readme&utm_medium=picture)
+
 ```
 src/
 ├── schemas/     TypeBox schemas (single source of truth)
