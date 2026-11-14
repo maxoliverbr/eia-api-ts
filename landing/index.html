@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>eia-api-ts — Agent-ready EIA energy data</title>
+<meta name="description" content="A typed, self-describing wrapper around the EIA APIv2. One query endpoint, 15 data domains, MCP server, built with Bun and Elysia.">
+<link rel="icon" href="logo.svg">
+<style>
+:root{--bg:#f8fafc;--fg:#0f172a;--mut:#475569;--card:#fff;--line:#e2e8f0;--teal:#0d9488;--amber:#f59e0b;--code:#0b1220;--glow:rgba(13,148,136,.18)}
+@media(prefers-color-scheme:dark){:root{--bg:#070b14;--fg:#e8eef9;--mut:#94a3b8;--card:#0e1524;--line:#1e293b;--teal:#2dd4bf;--glow:rgba(45,212,191,.16)}}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 Inter,system-ui,-apple-system,Segoe UI,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+nav{display:flex;align-items:center;justify-content:space-between;padding:18px 0}
+nav .brand{display:flex;align-items:center;gap:10px;font-weight:700}
+nav img{width:32px;height:32px}
+nav .links{display:flex;gap:22px;align-items:center;color:var(--mut);font-size:15px}
+nav .links a:hover{color:var(--fg)}
+.hero{position:relative;text-align:center;padding:84px 0 64px}
+.hero:before{content:"";position:absolute;inset:-80px 0 auto;height:420px;background:radial-gradient(ellipse at 50% 0,var(--glow),transparent 65%);z-index:-1}
+.pill{display:inline-block;padding:4px 14px;border:1px solid var(--line);border-radius:99px;font-size:13px;color:var(--mut);background:var(--card)}
+h1{font-size:clamp(2.4rem,6vw,4.2rem);line-height:1.05;letter-spacing:-.03em;margin:22px 0 18px}
+h1 span{background:linear-gradient(90deg,var(--teal),var(--amber));-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{max-width:640px;margin:0 auto 32px;color:var(--mut);font-size:1.15rem}
+.cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.btn{padding:12px 22px;border-radius:10px;font-weight:600;border:1px solid var(--line);background:var(--card);transition:transform .15s,border-color .15s}
+.btn:hover{transform:translateY(-2px);border-color:var(--teal)}
+.btn.p{background:var(--teal);border-color:var(--teal);color:#041311}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:56px 0 0}
+.stats div{padding:18px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+.stats b{display:block;font-size:1.9rem;letter-spacing:-.02em;color:var(--teal)}
+.stats small{color:var(--mut)}
+section{padding:56px 0}
+h2{font-size:clamp(1.7rem,3.5vw,2.4rem);letter-spacing:-.02em;margin:0 0 10px}
+.sub{color:var(--mut);margin:0 0 34px;max-width:620px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.card{padding:24px;border:1px solid var(--line);border-radius:16px;background:var(--card);transition:transform .2s,border-color .2s}
+.card:hover{transform:translateY(-3px);border-color:var(--teal)}
+.card i{font-style:normal;font-size:1.5rem}
+.card h3{margin:10px 0 6px;font-size:1.1rem}
+.card p{margin:0;color:var(--mut);font-size:.95rem}
+pre{margin:0;padding:22px;background:var(--code);color:#cbd5e1;border-radius:16px;overflow:auto;font:14px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace;border:1px solid var(--line)}
+pre .c{color:#64748b}pre .k{color:#2dd4bf}pre .s{color:#fbbf24}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.lbl{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);margin:0 0 8px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips span{padding:6px 14px;border:1px solid var(--line);border-radius:99px;background:var(--card);font-size:14px;color:var(--mut)}
+footer{border-top:1px solid var(--line);padding:28px 0;color:var(--mut);font-size:14px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
+@media(max-width:760px){.stats{grid-template-columns:1fr 1fr}.two{grid-template-columns:1fr}nav .links a:not(.gh){display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <a class="brand" href="#"><img src="logo.svg" alt=""> eia-api-ts</a>
+    <div class="links">
+      <a href="#features">Features</a><a href="#start">Quick start</a><a href="#mcp">MCP</a>
+      <a class="btn gh" style="padding:7px 16px" href="https://github.com/maxoliverbr/eia-api-ts">GitHub ↗</a>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <span class="pill">Bun · ElysiaJS · TypeBox · OpenAPI 3.1</span>
+    <h1>U.S. energy data,<br><span>ready for agents.</span></h1>
+    <p class="lead">A typed, self-describing wrapper around the EIA APIv2. One query endpoint, 15 data domains, and a built-in MCP server — running locally in minutes.</p>
+    <div class="cta">
+      <a class="btn p" href="#start">Get started</a>
+      <a class="btn" href="https://github.com/maxoliverbr/eia-api-ts">View on GitHub</a>
+    </div>
+    <div class="stats">
+      <div><b>100+</b><small>EIA endpoints unified</small></div>
+      <div><b>15</b><small>data domains</small></div>
+      <div><b>1</b><small>POST /query</small></div>
+      <div><b>9</b><small>MCP tools</small></div>
+    </div>
+  </header>
+
+  <section id="features">
+    <h2>Built for how agents work</h2>
+    <p class="sub">Discover, inspect, query — without hard-coding a single energy domain.</p>
+    <div class="grid">
+      <div class="card"><i>🔎</i><h3>Self-describing</h3><p><code>/domains</code>, <code>/search</code> and facet endpoints expose use cases, tags and example queries at runtime.</p></div>
+      <div class="card"><i>⚡</i><h3>One query shape</h3><p>A single <code>POST /query</code> fetches coal, electricity, natural gas, STEO, SEDS and more.</p></div>
+      <div class="card"><i>📘</i><h3>Agent playbook</h3><p><code>/guide</code> ships workflows, decision trees and recipes — fetch once, use as a system prompt.</p></div>
+      <div class="card"><i>🧠</i><h3>Energy ontology</h3><p>An RDF-style knowledge graph bridges “Coal emits CO₂” to concrete EIA domains. Export as JSON-LD or Turtle.</p></div>
+      <div class="card"><i>🛡️</i><h3>Key stays server-side</h3><p>Caching, request spacing, 429 back-off and normalized errors protect your EIA key.</p></div>
+      <div class="card"><i>🧩</i><h3>End-to-end types</h3><p>TypeBox schemas flow into routes and Eden Treaty clients. Zero <code>any</code>.</p></div>
+    </div>
+  </section>
+
+  <section id="start">
+    <h2>Quick start</h2>
+    <p class="sub">Grab a free key at <a href="https://www.eia.gov/opendata/" style="color:var(--teal)">eia.gov/opendata</a>, then:</p>
+    <div class="two">
+      <div>
+        <p class="lbl">Run the server</p>
+<pre><span class="c"># install &amp; configure</span>
+bun install
+cp .env.example .env
+<span class="c"># set EIA_API_KEY in .env</span>
+
+bun dev
+<span class="c"># → http://localhost:3000/openapi</span></pre>
+      </div>
+      <div>
+        <p class="lbl">Query anything</p>
+<pre>curl -X POST localhost:3000/query \
+  -H <span class="s">'content-type: application/json'</span> \
+  -d <span class="s">'{
+    "domain": "coal",
+    "route": "aggregate-production",
+    "frequency": "annual",
+    "data": ["production", "price"],
+    "start": "2020",
+    "end": "2024"
+  }'</span></pre>
+      </div>
+    </div>
+  </section>
+
+  <section id="mcp">
+    <h2>Plug into any MCP client</h2>
+    <p class="sub">Set <code>MCP_ENABLED=true</code> and the same surface is exposed at <code>/mcp</code> as 9 tools and 2 resources.</p>
+    <div class="chips"><span>Claude Desktop</span><span>Cursor</span><span>Mastra</span><span>LangChain</span><span>Eden Treaty</span><span>plain fetch / curl</span></div>
+  </section>
+
+  <footer>
+    <span>© eia-api-ts — not affiliated with the U.S. EIA.</span>
+    <span><a href="https://github.com/maxoliverbr/eia-api-ts">GitHub</a> · <a href="https://www.eia.gov/opendata/">EIA Open Data</a></span>
+  </footer>
+</div>
+</body>
+</html>
