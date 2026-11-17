@@ -43,7 +43,7 @@ h2{font-size:clamp(2rem,4vw,3rem);letter-spacing:-.02em;margin:0 0 10px}
 .card p{margin:0;color:var(--mut);font-size:1.05rem}
 pre{margin:0;padding:22px;background:var(--code);color:#cbd5e1;border-radius:16px;overflow:auto;font:16px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace;border:1px solid var(--line)}
 pre .c{color:#64748b}pre .k{color:#2dd4bf}pre .s{color:#fbbf24}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:28px 20px}.two>div{display:flex;flex-direction:column;min-width:0}.two pre{flex:1}@media(max-width:760px){.two>div{grid-column:auto!important}}
 .lbl{font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);margin:0 0 8px}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chips span{padding:6px 14px;border:1px solid var(--line);border-radius:99px;background:var(--card);font-size:16px;color:var(--mut)}
@@ -132,6 +132,14 @@ bun dev
 <span class="c"># → domains, routes, tags, example queries</span></pre>
       </div>
       <div>
+        <p class="lbl">Typed client (Eden Treaty)</p>
+<pre><span class="k">import</span> { treaty } <span class="k">from</span> <span class="s">'@elysiajs/eden'</span>
+<span class="k">import type</span> { App } <span class="k">from</span> <span class="s">'./src'</span>
+
+<span class="k">const</span> api = treaty&lt;App&gt;(<span class="s">'localhost:3000'</span>)
+<span class="k">const</span> { data } = <span class="k">await</span> api.domains.get()</pre>
+      </div>
+      <div>
         <p class="lbl">List domains</p>
 <pre>curl localhost:3000/domains
 <span class="c"># → 15 domains with useCases + exampleQuery</span></pre>
@@ -141,7 +149,7 @@ bun dev
 <pre>curl localhost:3000/guide
 <span class="c"># workflows, decision trees, recipes</span></pre>
       </div>
-      <div>
+      <div style="grid-column:1/-1">
         <p class="lbl">Filter by facet</p>
 <pre>curl -X POST localhost:3000/query \
   -H <span class="s">'content-type: application/json'</span> \
@@ -152,14 +160,6 @@ bun dev
     "data": ["price"],
     "facets": {"stateid": ["TX"], "sectorid": ["RES"]}
   }'</span></pre>
-      </div>
-      <div>
-        <p class="lbl">Typed client (Eden Treaty)</p>
-<pre><span class="k">import</span> { treaty } <span class="k">from</span> <span class="s">'@elysiajs/eden'</span>
-<span class="k">import type</span> { App } <span class="k">from</span> <span class="s">'./src'</span>
-
-<span class="k">const</span> api = treaty&lt;App&gt;(<span class="s">'localhost:3000'</span>)
-<span class="k">const</span> { data } = <span class="k">await</span> api.domains.get()</pre>
       </div>
       <div>
         <p class="lbl">Run the bundled examples</p>
