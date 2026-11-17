@@ -7,48 +7,55 @@
 <meta name="description" content="A typed, self-describing wrapper around the EIA APIv2. One query endpoint, 15 data domains, MCP server, built with Bun and Elysia.">
 <link rel="icon" href="logo.svg">
 <style>
-:root{--bg:#f8fafc;--fg:#0f172a;--mut:#475569;--card:#fff;--line:#e2e8f0;--teal:#0d9488;--amber:#f59e0b;--code:#0b1220;--glow:rgba(13,148,136,.18)}
-@media(prefers-color-scheme:dark){:root{--bg:#070b14;--fg:#e8eef9;--mut:#94a3b8;--card:#0e1524;--line:#1e293b;--teal:#2dd4bf;--glow:rgba(45,212,191,.16)}}
+:root{color-scheme:dark;--bg:#060a12;--fg:#f1f5f9;--mut:#8b9ab0;--card:#0b1220;--line:#1a2536;--teal:#2dd4bf;--green:#a3e635;--amber:#f59e0b;--code:#080d18;--glow:rgba(45,212,191,.16)}
 *{box-sizing:border-box}html{scroll-behavior:smooth}
-body{margin:0;background:var(--bg);color:var(--fg);font:18px/1.6 Inter,system-ui,-apple-system,Segoe UI,sans-serif;-webkit-font-smoothing:antialiased}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 Inter,system-ui,-apple-system,Segoe UI,sans-serif;-webkit-font-smoothing:antialiased}
 a{color:inherit;text-decoration:none}
-.wrap{max-width:1200px;margin:0 auto;padding:0 20px}
-nav{display:flex;align-items:center;justify-content:space-between;padding:18px 0}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--teal);font-size:.9em}
+.wrap{max-width:1100px;margin:0 auto;padding:0 20px}
+nav{display:flex;align-items:center;justify-content:space-between;padding:16px 0}
 nav .brand{display:flex;align-items:center;gap:10px;font-weight:700}
-nav img{width:32px;height:32px}
-nav .links{display:flex;gap:22px;align-items:center;color:var(--mut);font-size:17px}
+nav img{width:26px;height:26px}
+nav .links{display:flex;gap:22px;align-items:center;color:var(--mut);font-size:14px}
 nav .links a:hover{color:var(--fg)}
-.hero{position:relative;text-align:center;padding:84px 0 64px}
-.hero:before{content:"";position:absolute;inset:-80px 0 auto;height:420px;background:radial-gradient(ellipse at 50% 0,var(--glow),transparent 65%);z-index:-1}
-.pill{display:inline-block;padding:4px 14px;border:1px solid var(--line);border-radius:99px;font-size:15px;color:var(--mut);background:var(--card)}
-h1{font-size:clamp(2.8rem,7vw,5.5rem);line-height:1.05;letter-spacing:-.03em;margin:22px 0 18px}
-h1 span{background:linear-gradient(90deg,var(--teal),var(--amber));-webkit-background-clip:text;background-clip:text;color:transparent}
-.lead{max-width:760px;margin:0 auto 36px;color:var(--mut);font-size:1.4rem}
+.hero{position:relative;text-align:center;padding:64px 0 40px}
+.hero:before{content:"";position:absolute;inset:-90px 0 auto;height:460px;background:radial-gradient(ellipse at 50% 0,var(--glow),transparent 65%);z-index:-1}
+.pill{display:inline-block;padding:3px 12px;border:1px solid var(--line);border-radius:99px;font-size:12px;color:var(--mut);background:var(--card)}
+h1{font-size:clamp(2.4rem,6.5vw,4.6rem);line-height:1.08;letter-spacing:-.03em;margin:26px 0 20px}
+h1 span{background:linear-gradient(90deg,var(--teal),var(--green) 50%,var(--amber));-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{max-width:600px;margin:0 auto 30px;color:var(--mut);font-size:1.1rem}
 .cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
-.btn{padding:15px 28px;font-size:1.1rem;border-radius:10px;font-weight:600;border:1px solid var(--line);background:var(--card);transition:transform .15s,border-color .15s}
+.btn{padding:11px 22px;font-size:.95rem;border-radius:9px;font-weight:600;border:1px solid var(--line);background:var(--card);transition:transform .15s,border-color .15s}
 .btn:hover{transform:translateY(-2px);border-color:var(--teal)}
 .btn.p{background:var(--teal);border-color:var(--teal);color:#041311}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:56px 0 0}
-.stats div{padding:18px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
-.stats b{display:block;font-size:2.3rem;letter-spacing:-.02em;color:var(--teal)}
-.stats small{color:var(--mut)}
-section{padding:56px 0}
-h2{font-size:clamp(2rem,4vw,3rem);letter-spacing:-.02em;margin:0 0 10px}
-.sub{color:var(--mut);margin:0 0 34px;max-width:620px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
-.card{padding:24px;border:1px solid var(--line);border-radius:16px;background:var(--card);transition:transform .2s,border-color .2s}
-.card:hover{transform:translateY(-3px);border-color:var(--teal)}
-.card i{font-style:normal;font-size:1.5rem}
-.card h3{margin:10px 0 6px;font-size:1.3rem}
-.card p{margin:0;color:var(--mut);font-size:1.05rem}
-pre{margin:0;padding:22px;background:var(--code);color:#cbd5e1;border-radius:16px;overflow:auto;font:16px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace;border:1px solid var(--line)}
-pre .c{color:#64748b}pre .k{color:#2dd4bf}pre .s{color:#fbbf24}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:28px 20px}.two>div{display:flex;flex-direction:column;min-width:0}.two pre{flex:1}@media(max-width:760px){.two>div{grid-column:auto!important}}
-.lbl{font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);margin:0 0 8px}
-.chips{display:flex;flex-wrap:wrap;gap:8px}
-.chips span{padding:6px 14px;border:1px solid var(--line);border-radius:99px;background:var(--card);font-size:16px;color:var(--mut)}
-footer{border-top:1px solid var(--line);padding:28px 0;color:var(--mut);font-size:16px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
-@media(max-width:760px){.stats{grid-template-columns:1fr 1fr}.two{grid-template-columns:1fr}nav .links a:not(.gh){display:none}}
+.clone{display:inline-flex;gap:12px;align-items:center;margin:22px auto 0;padding:7px 14px;border:1px solid var(--line);border-radius:8px;background:var(--card);font:13px ui-monospace,SFMono-Regular,Menlo,monospace;color:#cbd5e1;max-width:100%;overflow:auto;white-space:nowrap}
+.clone button{background:none;border:0;color:var(--teal);font:inherit;cursor:pointer;padding:0}
+.hero pre{max-width:640px;margin:40px auto 0;text-align:left;box-shadow:0 0 90px var(--glow)}
+section{padding:64px 0}
+h2{font-size:clamp(1.6rem,3vw,2.1rem);letter-spacing:-.02em;margin:0 0 8px;text-align:center}
+.sub{color:var(--mut);margin:0 auto 36px;max-width:620px;text-align:center;font-size:15px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.card{padding:18px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+.card i{font-style:normal;font-size:1.2rem}
+.card h3{margin:10px 0 6px;font-size:.95rem}
+.card p{margin:0;color:var(--mut);font-size:13.5px;line-height:1.55}
+pre{margin:0;padding:18px 20px;background:var(--code);color:#cbd5e1;border-radius:12px;overflow:auto;font:13px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace;border:1px solid var(--line)}
+pre .c{color:#64748b}pre .k{color:var(--amber)}pre .s{color:var(--teal)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}.two>*{min-width:0}.two pre{height:100%}
+.panel{padding:16px 18px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+.panel h3{margin:0 0 4px;font-size:.9rem}.panel p{margin:0;color:var(--mut);font-size:13.5px}
+.stack{display:grid;gap:12px}
+.dia{max-width:900px;margin:0 auto;border:1px solid var(--line);border-radius:12px;background:var(--code);padding:16px}
+.dia svg{width:100%;height:auto;display:block;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.note{max-width:620px;margin:28px auto 0;padding:12px 16px;border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:8px;background:var(--card);color:var(--mut);font-size:13px}
+.note a{color:var(--teal)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.chips span{padding:5px 14px;border:1px solid var(--line);border-radius:99px;background:var(--card);font-size:13px;color:var(--mut)}
+footer{border-top:1px solid var(--line);padding:24px 0;color:var(--mut);font-size:13px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
+footer a:hover{color:var(--fg)}
+@media(max-width:900px){.grid{grid-template-columns:1fr 1fr}}
+@media(max-width:760px){.two{grid-template-columns:1fr}nav .links a:not(.gh){display:none}}
+@media(max-width:480px){.grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -56,25 +63,29 @@ footer{border-top:1px solid var(--line);padding:28px 0;color:var(--mut);font-siz
   <nav>
     <a class="brand" href="#"><img src="logo.svg" alt=""> eia-api-ts</a>
     <div class="links">
-      <a href="#features">Features</a><a href="#start">Quick start</a><a href="#examples">Examples</a><a href="#openapi">OpenAPI</a><a href="#mcp">MCP</a>
-      <a class="btn gh" style="padding:7px 16px" href="https://github.com/maxoliverbr/eia-api-ts">GitHub ↗</a>
+      <a href="#features">Features</a><a href="#architecture">Architecture</a><a href="#types">Type safety</a><a href="#examples">Examples</a><a href="#start">Quick start</a><a href="https://eia-api.maxcalkin.dev">Docs</a>
+      <a class="btn gh" style="padding:6px 14px" href="https://github.com/maxoliverbr/eia-api-ts">GitHub ↗</a>
     </div>
   </nav>
 
   <header class="hero">
-    <span class="pill">Bun · ElysiaJS · TypeBox · OpenAPI 3.1</span>
+    <span class="pill">Bun · Elysia · Eden · OpenAPI · MCP</span>
     <h1>U.S. energy data,<br><span>ready for agents.</span></h1>
-    <p class="lead">A typed, self-describing wrapper around the EIA APIv2. One query endpoint, 15 data domains, and a built-in MCP server — running locally in minutes.</p>
+    <p class="lead">A typed, self-describing wrapper around the EIA APIv2. One query endpoint, 15 data domains and a built-in MCP server — running locally in minutes.</p>
     <div class="cta">
       <a class="btn p" href="#start">Get started</a>
       <a class="btn" href="https://github.com/maxoliverbr/eia-api-ts">View on GitHub</a>
+      <a class="btn" href="https://eia-api.maxcalkin.dev">Documentation</a>
     </div>
-    <div class="stats">
-      <div><b>100+</b><small>EIA endpoints unified</small></div>
-      <div><b>15</b><small>data domains</small></div>
-      <div><b>1</b><small>POST /query</small></div>
-      <div><b>9</b><small>MCP tools</small></div>
-    </div>
+    <div class="clone"><span>$ git clone https://github.com/maxoliverbr/eia-api-ts</span><button type="button" onclick="navigator.clipboard.writeText('git clone https://github.com/maxoliverbr/eia-api-ts');this.textContent='copied'">copy</button></div>
+<pre><span class="c"># annual coal production &amp; price, 2020–2024</span>
+curl -X POST localhost:3000/query \
+  -H <span class="s">'content-type: application/json'</span> \
+  -d <span class="s">'{"domain":"coal","route":"aggregate-production",
+       "frequency":"annual","data":["production","price"],
+       "start":"2020","end":"2024"}'</span>
+
+<span class="c"># → { "response": { "total": N, "data": [ … ] } }</span></pre>
   </header>
 
   <section id="features">
@@ -84,110 +95,104 @@ footer{border-top:1px solid var(--line);padding:28px 0;color:var(--mut);font-siz
       <div class="card"><i>🔎</i><h3>Self-describing</h3><p><code>/domains</code>, <code>/search</code> and facet endpoints expose use cases, tags and example queries at runtime.</p></div>
       <div class="card"><i>⚡</i><h3>One query shape</h3><p>A single <code>POST /query</code> fetches coal, electricity, natural gas, STEO, SEDS and more.</p></div>
       <div class="card"><i>📘</i><h3>Agent playbook</h3><p><code>/guide</code> ships workflows, decision trees and recipes — fetch once, use as a system prompt.</p></div>
-      <div class="card"><i>🧠</i><h3>Energy ontology</h3><p>An RDF-style knowledge graph bridges “Coal emits CO₂” to concrete EIA domains. Export as JSON-LD or Turtle.</p></div>
+      <div class="card"><i>🧠</i><h3>Energy ontology</h3><p>An RDF-style graph bridges “Coal emits CO₂” to concrete EIA domains. Export as JSON-LD or Turtle.</p></div>
       <div class="card"><i>🛡️</i><h3>Key stays server-side</h3><p>Caching, request spacing, 429 back-off and normalized errors protect your EIA key.</p></div>
       <div class="card"><i>🧩</i><h3>End-to-end types</h3><p>TypeBox schemas flow into routes and Eden Treaty clients. Zero <code>any</code>.</p></div>
+      <div class="card"><i>📗</i><h3>OpenAPI docs</h3><p>Interactive docs at <code>/openapi</code> and a JSON spec at <code>/openapi/json</code>, generated from the code.</p></div>
+      <div class="card"><i>🔌</i><h3>MCP server</h3><p>Set <code>MCP_ENABLED=true</code> for 9 tools and 2 resources at <code>/mcp</code>.</p></div>
     </div>
   </section>
 
-  <section id="start">
-    <h2>Quick start</h2>
-    <p class="sub">Grab a free key at <a href="https://www.eia.gov/opendata/" style="color:var(--teal)">eia.gov/opendata</a>, then:</p>
-    <div class="two">
-      <div>
-        <p class="lbl">Run the server</p>
-<pre><span class="c"># install &amp; configure</span>
-bun install
-cp .env.example .env
-<span class="c"># set EIA_API_KEY in .env</span>
-
-bun dev
-<span class="c"># → http://localhost:3000/openapi</span></pre>
-      </div>
-      <div>
-        <p class="lbl">Query anything</p>
-<pre>curl -X POST localhost:3000/query \
-  -H <span class="s">'content-type: application/json'</span> \
-  -d <span class="s">'{
-    "domain": "coal",
-    "route": "aggregate-production",
-    "frequency": "annual",
-    "data": ["production", "price"],
-    "start": "2020",
-    "end": "2024"
-  }'</span></pre>
-      </div>
+  <section id="architecture">
+    <h2>How it fits together</h2>
+    <p class="sub">One small server between your code and the EIA. REST and MCP share the same validated core.</p>
+    <div class="dia">
+      <svg viewBox="0 0 860 300" fill="none" stroke-width="1.2" role="img" aria-label="Clients call the Bun and Elysia server, which calls the EIA API">
+        <g font-size="10" fill="#8b9ab0" stroke="none"><text x="10" y="14" fill="#64748b">CLIENTS</text><text x="300" y="14" fill="#2dd4bf">THIS APP (BUN + ELYSIA)</text><text x="690" y="14" fill="#64748b">UPSTREAM</text></g>
+        <g stroke="#1e293b" fill="#0b1220">
+          <rect x="10" y="30" width="190" height="52" rx="8"/><rect x="10" y="114" width="190" height="52" rx="8"/><rect x="10" y="198" width="190" height="52" rx="8"/>
+        </g>
+        <g font-size="12" fill="#e2e8f0" stroke="none" text-anchor="middle"><text x="105" y="52">Your code</text><text x="105" y="136">HTTP / curl</text><text x="105" y="220">AI agents</text></g>
+        <g font-size="9.5" fill="#64748b" stroke="none" text-anchor="middle"><text x="105" y="68">Eden treaty&lt;App&gt;</text><text x="105" y="152">POST /query · GET /domains</text><text x="105" y="236">MCP: Claude, Cursor</text></g>
+        <rect x="300" y="24" width="320" height="236" rx="12" stroke="#2dd4bf" fill="#0b1a1f"/>
+        <g stroke="#1e3a3f" fill="#0b1220"><rect x="320" y="44" width="280" height="42" rx="6"/><rect x="320" y="100" width="280" height="42" rx="6"/><rect x="320" y="156" width="280" height="42" rx="6"/><rect x="320" y="212" width="280" height="36" rx="6"/></g>
+        <g font-size="11.5" fill="#e2e8f0" stroke="none" text-anchor="middle"><text x="460" y="62">Routes</text><text x="460" y="118">Validate input</text><text x="460" y="174">Build EIA request</text><text x="460" y="229">Cache · back-off</text></g>
+        <g font-size="9.5" fill="#64748b" stroke="none" text-anchor="middle"><text x="460" y="77">/query · /domains · /guide · /mcp</text><text x="460" y="133">TypeBox · 422 on bad params</text><text x="460" y="189">domain → route → facets</text></g>
+        <g stroke="#64748b"><path d="M200 56h50v100h50M200 140h100M200 224h50v-68"/><path d="M460 86v14M460 142v14M460 198v14"/><path d="M620 142h70"/></g>
+        <rect x="690" y="116" width="160" height="52" rx="8" stroke="#f59e0b" fill="#0b1220"/>
+        <g font-size="12" fill="#e2e8f0" stroke="none" text-anchor="middle"><text x="770" y="138">EIA APIv2</text></g>
+        <g font-size="9.5" fill="#64748b" stroke="none" text-anchor="middle"><text x="770" y="154">api.eia.gov/v2</text><text x="655" y="136">API key</text></g>
+      </svg>
     </div>
   </section>
 
-  <section id="examples">
-    <h2>More examples</h2>
-    <p class="sub">Discover first, then query. Every endpoint is plain HTTP.</p>
+  <section id="types">
+    <h2>Type-safe, from query to response</h2>
+    <p class="sub">The server's types flow straight into your client. No codegen, no hand-written interfaces.</p>
     <div class="two">
-      <div>
-        <p class="lbl">Search by topic</p>
-<pre>curl -X POST localhost:3000/search \
-  -H <span class="s">'content-type: application/json'</span> \
-  -d <span class="s">'{"q": "solar"}'</span>
-<span class="c"># → domains, routes, tags, example queries</span></pre>
-      </div>
-      <div>
-        <p class="lbl">Typed client (Eden Treaty)</p>
 <pre><span class="k">import</span> { treaty } <span class="k">from</span> <span class="s">'@elysiajs/eden'</span>
 <span class="k">import type</span> { App } <span class="k">from</span> <span class="s">'./src'</span>
 
 <span class="k">const</span> api = treaty&lt;App&gt;(<span class="s">'localhost:3000'</span>)
-<span class="k">const</span> { data } = <span class="k">await</span> api.domains.get()</pre>
-      </div>
-      <div>
-        <p class="lbl">List domains</p>
-<pre>curl localhost:3000/domains
-<span class="c"># → 15 domains with useCases + exampleQuery</span></pre>
-      </div>
-      <div>
-        <p class="lbl">Fetch the agent playbook</p>
-<pre>curl localhost:3000/guide
-<span class="c"># workflows, decision trees, recipes</span></pre>
-      </div>
-      <div style="grid-column:1/-1">
-        <p class="lbl">Filter by facet</p>
-<pre>curl -X POST localhost:3000/query \
-  -H <span class="s">'content-type: application/json'</span> \
-  -d <span class="s">'{
-    "domain": "electricity",
-    "route": "retail-sales",
-    "frequency": "monthly",
-    "data": ["price"],
-    "facets": {"stateid": ["TX"], "sectorid": ["RES"]}
-  }'</span></pre>
-      </div>
-      <div>
-        <p class="lbl">Run the bundled examples</p>
-<pre>bun run examples/02-discovery.ts
-bun run examples/06-query-post-basic.ts
-bun run examples/agent-usage.ts</pre>
+
+<span class="k">const</span> { data, error } = <span class="k">await</span> api.query.post({
+  domain: <span class="s">'coal'</span>,
+  route: <span class="s">'aggregate-production'</span>,
+  frequency: <span class="s">'annual'</span>,
+  data: [<span class="s">'production'</span>],
+})
+
+<span class="c">// typed, autocompleted</span>
+data?.response.data[0]
+
+<span class="c">// domain: 'nope' is a compile error</span>
+<span class="c">// and a 422 at runtime</span></pre>
+      <div class="stack">
+        <div class="panel"><h3>Requests</h3><p>Bodies are validated at runtime and typed from the same TypeBox schema.</p></div>
+        <div class="panel"><h3>Responses</h3><p>Normalized EIA responses with typed errors — no more guessing at upstream shapes.</p></div>
+        <div class="panel"><h3>Schemas that match reality</h3><p>Domains, routes, facets and frequencies are discovered from the live EIA metadata.</p></div>
+        <div class="panel"><h3>Errors</h3><p>429s are backed off and retried; everything else surfaces as a typed <code>error</code>.</p></div>
       </div>
     </div>
   </section>
 
   <section id="openapi">
-    <h2>OpenAPI, out of the box</h2>
-    <p class="sub">Every route is generated from its TypeBox schema, so the spec never drifts from the code.</p>
+    <h2>Documented automatically</h2>
+    <p class="sub">The OpenAPI spec is generated from the same schemas, so it can't drift from the code.</p>
     <div class="two">
-      <div>
-        <p class="lbl">Browse &amp; fetch the spec</p>
-<pre><span class="c"># Swagger UI</span>
-open http://localhost:3000/openapi
-
-<span class="c"># OpenAPI 3.1 JSON</span>
-curl localhost:3000/openapi/json &gt; spec.json</pre>
-      </div>
-      <div>
-        <p class="lbl">Generate a client in any language</p>
-<pre>bunx openapi-typescript spec.json -o api.d.ts
+<pre><span class="c"># start the API, then open the docs</span>
+bun dev
+http://localhost:3000/openapi       <span class="c"># Swagger UI</span>
+http://localhost:3000/openapi/json  <span class="c"># OpenAPI 3.1</span></pre>
+<pre><span class="c"># generate a client in any language</span>
+bunx openapi-typescript spec.json -o api.d.ts
 bunx @openapitools/openapi-generator-cli \
   generate -i spec.json -g python -o ./client</pre>
-      </div>
+    </div>
+  </section>
+
+  <section id="examples">
+    <h2>Examples with a purpose</h2>
+    <p class="sub">Discover first, then query. Every endpoint is plain HTTP.</p>
+    <div class="two">
+<pre><span class="c"># search by topic</span>
+curl -X POST localhost:3000/search \
+  -H <span class="s">'content-type: application/json'</span> \
+  -d <span class="s">'{"q": "solar"}'</span>
+<span class="c"># → domains, routes, tags, example queries</span></pre>
+<pre><span class="c"># filter by facet</span>
+curl -X POST localhost:3000/query \
+  -H <span class="s">'content-type: application/json'</span> \
+  -d <span class="s">'{"domain":"electricity","route":"retail-sales",
+       "frequency":"monthly","data":["price"],
+       "facets":{"stateid":["TX"],"sectorid":["RES"]}}'</span></pre>
+<pre><span class="c"># list domains / fetch the agent playbook</span>
+curl localhost:3000/domains
+curl localhost:3000/guide</pre>
+<pre><span class="c"># run the bundled examples</span>
+bun run examples/02-discovery.ts
+bun run examples/06-query-post-basic.ts
+bun run examples/agent-usage.ts</pre>
     </div>
   </section>
 
@@ -197,9 +202,28 @@ bunx @openapitools/openapi-generator-cli \
     <div class="chips"><span>Claude Desktop</span><span>Cursor</span><span>Mastra</span><span>LangChain</span><span>Eden Treaty</span><span>plain fetch / curl</span></div>
   </section>
 
+  <section id="start">
+    <h2>Quick start</h2>
+    <p class="sub">Install, configure, query.</p>
+    <div class="two">
+<pre><span class="c"># run it</span>
+bun install
+cp .env.example .env
+<span class="c"># set EIA_API_KEY in .env</span>
+bun dev   <span class="c"># http://localhost:3000</span></pre>
+<pre><span class="c"># discover, then query</span>
+curl localhost:3000/domains
+curl -X POST localhost:3000/query \
+  -H <span class="s">'content-type: application/json'</span> \
+  -d <span class="s">'{"domain":"coal","route":"aggregate-production",
+       "frequency":"annual","data":["production"]}'</span></pre>
+    </div>
+    <p class="note">This site is static documentation. The API is self-hosted and needs your own free EIA key (<a href="https://www.eia.gov/opendata/">get one here</a>), which must never be published in a browser.</p>
+  </section>
+
   <footer>
-    <span>© eia-api-ts — not affiliated with the U.S. EIA.</span>
-    <span><a href="https://github.com/maxoliverbr/eia-api-ts">GitHub</a> · <a href="https://www.eia.gov/opendata/">EIA Open Data</a></span>
+    <span>MIT licensed · Not affiliated with the U.S. EIA</span>
+    <span><a href="https://eia-api.maxcalkin.dev">Docs</a> · <a href="https://www.eia.gov/opendata/">EIA API</a> · <a href="https://github.com/maxoliverbr/eia-api-ts">GitHub</a></span>
   </footer>
 </div>
 </body>
