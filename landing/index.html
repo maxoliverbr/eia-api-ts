@@ -56,7 +56,7 @@ footer{border-top:1px solid var(--line);padding:28px 0;color:var(--mut);font-siz
   <nav>
     <a class="brand" href="#"><img src="logo.svg" alt=""> eia-api-ts</a>
     <div class="links">
-      <a href="#features">Features</a><a href="#start">Quick start</a><a href="#mcp">MCP</a>
+      <a href="#features">Features</a><a href="#start">Quick start</a><a href="#examples">Examples</a><a href="#openapi">OpenAPI</a><a href="#mcp">MCP</a>
       <a class="btn gh" style="padding:7px 16px" href="https://github.com/maxoliverbr/eia-api-ts">GitHub ↗</a>
     </div>
   </nav>
@@ -116,6 +116,77 @@ bun dev
     "start": "2020",
     "end": "2024"
   }'</span></pre>
+      </div>
+    </div>
+  </section>
+
+  <section id="examples">
+    <h2>More examples</h2>
+    <p class="sub">Discover first, then query. Every endpoint is plain HTTP.</p>
+    <div class="two">
+      <div>
+        <p class="lbl">Search by topic</p>
+<pre>curl -X POST localhost:3000/search \
+  -H <span class="s">'content-type: application/json'</span> \
+  -d <span class="s">'{"q": "solar"}'</span>
+<span class="c"># → domains, routes, tags, example queries</span></pre>
+      </div>
+      <div>
+        <p class="lbl">List domains</p>
+<pre>curl localhost:3000/domains
+<span class="c"># → 15 domains with useCases + exampleQuery</span></pre>
+      </div>
+      <div>
+        <p class="lbl">Fetch the agent playbook</p>
+<pre>curl localhost:3000/guide
+<span class="c"># workflows, decision trees, recipes</span></pre>
+      </div>
+      <div>
+        <p class="lbl">Filter by facet</p>
+<pre>curl -X POST localhost:3000/query \
+  -H <span class="s">'content-type: application/json'</span> \
+  -d <span class="s">'{
+    "domain": "electricity",
+    "route": "retail-sales",
+    "frequency": "monthly",
+    "data": ["price"],
+    "facets": {"stateid": ["TX"], "sectorid": ["RES"]}
+  }'</span></pre>
+      </div>
+      <div>
+        <p class="lbl">Typed client (Eden Treaty)</p>
+<pre><span class="k">import</span> { treaty } <span class="k">from</span> <span class="s">'@elysiajs/eden'</span>
+<span class="k">import type</span> { App } <span class="k">from</span> <span class="s">'./src'</span>
+
+<span class="k">const</span> api = treaty&lt;App&gt;(<span class="s">'localhost:3000'</span>)
+<span class="k">const</span> { data } = <span class="k">await</span> api.domains.get()</pre>
+      </div>
+      <div>
+        <p class="lbl">Run the bundled examples</p>
+<pre>bun run examples/02-discovery.ts
+bun run examples/06-query-post-basic.ts
+bun run examples/agent-usage.ts</pre>
+      </div>
+    </div>
+  </section>
+
+  <section id="openapi">
+    <h2>OpenAPI, out of the box</h2>
+    <p class="sub">Every route is generated from its TypeBox schema, so the spec never drifts from the code.</p>
+    <div class="two">
+      <div>
+        <p class="lbl">Browse &amp; fetch the spec</p>
+<pre><span class="c"># Swagger UI</span>
+open http://localhost:3000/openapi
+
+<span class="c"># OpenAPI 3.1 JSON</span>
+curl localhost:3000/openapi/json &gt; spec.json</pre>
+      </div>
+      <div>
+        <p class="lbl">Generate a client in any language</p>
+<pre>bunx openapi-typescript spec.json -o api.d.ts
+bunx @openapitools/openapi-generator-cli \
+  generate -i spec.json -g python -o ./client</pre>
       </div>
     </div>
   </section>
